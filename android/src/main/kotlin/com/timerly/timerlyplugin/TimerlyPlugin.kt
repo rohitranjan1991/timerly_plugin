@@ -20,10 +20,8 @@ import org.greenrobot.eventbus.ThreadMode
 
 class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventChannel.StreamHandler {
 
-
     private var timerlyNotificationEventManager: TimerlyNotificationEventManager? = null
     private var eventSink: EventChannel.EventSink? = null
-
 
     override fun onMethodCall(call: MethodCall, result: Result): Unit {
         if (call.method.equals("getPlatformVersion")) {

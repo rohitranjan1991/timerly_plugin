@@ -21,7 +21,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     initPlatformState();
 
-    TimerlyPlugin.subscribeToNotificationEvents((message){
+    TimerlyPlugin.subscribeToNotificationEvents((message) {
       print("received Message, Yepii");
       print(message);
     });
@@ -81,7 +81,8 @@ class _MyAppState extends State<MyApp> {
                   onPressed: () {
                     TimerlyPlugin.stopForegroundService();
                   },
-                  child: Text("Stop Foreground Service"))
+                  child: Text("Stop Foreground Service")),
+              RaisedButton(onPressed: () {}, child: Text("Change Text"))
             ],
           ),
         ),
