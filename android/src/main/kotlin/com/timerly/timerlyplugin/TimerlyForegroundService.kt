@@ -5,14 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.IBinder
-import android.support.v4.app.NotificationCompat
 import android.util.Log
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
 import com.google.gson.Gson
 import com.timerly.timerlyplugin.models.CreateForegroundServiceRequest
 import com.timerly.timerlyplugin.models.NotificationActionButton
 import com.timerly.timerlyplugin.models.TimerlyNotificationEvent
-import io.flutter.plugin.common.EventChannel
 import org.greenrobot.eventbus.EventBus
 
 
@@ -49,8 +48,6 @@ class TimerlyForegroundService : Service() {
                         }
                     }
                 }
-//                ACTION_PLAY -> Toast.makeText(applicationContext, "You click Play button.", Toast.LENGTH_LONG).show()
-//                ACTION_PAUSE -> Toast.makeText(applicationContext, "You click Pause button.", Toast.LENGTH_LONG).show()
             }
         }
         return super.onStartCommand(intent, flags, startId)

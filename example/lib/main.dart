@@ -79,7 +79,7 @@ class _MyAppState extends State<MyApp> {
                   child: Text("Start Foreground Service")),
               RaisedButton(
                   onPressed: () {
-                    TimerlyPlugin.stopForegroundService();
+
                   },
                   child: Text("Stop Foreground Service")),
               RaisedButton(onPressed: () {}, child: Text("Change Text"))
