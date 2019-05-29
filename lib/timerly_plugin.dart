@@ -19,9 +19,14 @@ class TimerlyPlugin {
 
   static Future<bool> startForegroundService(
       CreateForegroundServiceRequest createForegroundServiceRequest) async {
-    print("asdasdasdasdasdasd");
-    print(json.encode(createForegroundServiceRequest.toJson()));
     var hasStarted = await _channel.invokeMethod('startForegroundService',
+        {"data": json.encode(createForegroundServiceRequest.toJson())});
+    return hasStarted;
+  }
+
+  static Future<bool> updateForegroundService(
+      CreateForegroundServiceRequest createForegroundServiceRequest) async {
+    var hasStarted = await _channel.invokeMethod('updateForegroundService',
         {"data": json.encode(createForegroundServiceRequest.toJson())});
     return hasStarted;
   }
@@ -33,12 +38,12 @@ class TimerlyPlugin {
 
   static subscribeToNotificationEvents(Function func) {
     _timerSubscription =
-        notificationEventStream.receiveBroadcastStream().listen((message){
-          func(message);
-        });
+        notificationEventStream.receiveBroadcastStream().listen((message) {
+      func(message);
+    });
   }
 
-  static unsubscribeToNotificationEvents(Function func) {
+  static unsubscribeToNotificationEvents() {
     if (_timerSubscription != null) {
       _timerSubscription.cancel();
       _timerSubscription = null;

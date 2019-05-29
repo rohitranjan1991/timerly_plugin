@@ -13,11 +13,12 @@ import com.timerly.timerlyplugin.models.CreateForegroundServiceRequest
 import com.timerly.timerlyplugin.models.NotificationActionButton
 import com.timerly.timerlyplugin.models.TimerlyNotificationEvent
 import org.greenrobot.eventbus.EventBus
+import android.app.NotificationManager
 
 
 class TimerlyForegroundService : Service() {
 
-    private val TAG_FOREGROUND_SERVICE = "FOREGROUND_SERVICE"
+    private val TAG_FOREGROUND_SERVICE = "TimerlyForegroundTag"
     private var mNotificationManager: NotificationManager? = null
     private var mBuilder: NotificationCompat.Builder? = null
     private var actionButtons: List<NotificationActionButton>? = null
@@ -30,15 +31,21 @@ class TimerlyForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
             val action = intent.action
-
             when (action) {
                 ACTION_START_FOREGROUND_SERVICE -> {
                     startForegroundService(Gson().fromJson(intent.extras!!.getString("data"), CreateForegroundServiceRequest::class.java))
-                    Toast.makeText(applicationContext, "Foreground service is started.", Toast.LENGTH_LONG).show()
+                    Log.d(TAG_FOREGROUND_SERVICE, "Foreground service is started.")
                 }
                 ACTION_STOP_FOREGROUND_SERVICE -> {
                     stopForegroundService()
-                    Toast.makeText(applicationContext, "Foreground service is stopped.", Toast.LENGTH_LONG).show()
+                    Log.d(TAG_FOREGROUND_SERVICE, "Foreground service is stopped.")
+                }
+                ACTION_UPDATE_NOTIFICATION_SERVICE -> {
+                    Log.d(TAG_FOREGROUND_SERVICE, "Foreground notification is been updated.")
+                    val createForegroundServiceRequest = Gson().fromJson(intent.extras!!.getString("data"), CreateForegroundServiceRequest::class.java)
+                    val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    mNotificationManager.notify(createForegroundServiceRequest.serviceID, createNotification(createForegroundServiceRequest, true))
+                    Toast.makeText(applicationContext, "Foreground service is updated.", Toast.LENGTH_LONG).show()
                 }
                 else -> {
                     actionButtons?.let {
@@ -65,7 +72,7 @@ class TimerlyForegroundService : Service() {
     /**
      * Create and push the notification
      */
-    fun createNotification(createForegroundServiceRequest: CreateForegroundServiceRequest): Notification? {
+    fun createNotification(createForegroundServiceRequest: CreateForegroundServiceRequest, isAnUpdate: Boolean? = false): Notification? {
         /**Creates an explicit intent for an Activity in your app */
         val resultIntent = Intent(this, TimerlyForegroundService::class.java)
         resultIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -76,6 +83,7 @@ class TimerlyForegroundService : Service() {
 
         mBuilder = NotificationCompat.Builder(this)
         mBuilder!!.setSmallIcon(R.mipmap.ic_launcher)
+
         mBuilder!!.setContentTitle(createForegroundServiceRequest.title)
                 .setContentText(createForegroundServiceRequest.message)
                 .setAutoCancel(createForegroundServiceRequest.autoCancel!!)
@@ -85,12 +93,11 @@ class TimerlyForegroundService : Service() {
         if (createForegroundServiceRequest.bigContentTitle != null) {
             // Make notification show big text.
             val bigTextStyle = NotificationCompat.BigTextStyle()
-            bigTextStyle.setBigContentTitle("Music player implemented by foreground service.")
-            bigTextStyle.bigText("Android foreground service is a android service which can run in foreground always, it can be controlled by user via notification.")
+            bigTextStyle.setBigContentTitle(createForegroundServiceRequest.bigContentTitle)
+            bigTextStyle.bigText(createForegroundServiceRequest.bigContentMessage)
             // Set big text style.
             mBuilder!!.setStyle(bigTextStyle)
         }
-
 
         mBuilder!!.setWhen(System.currentTimeMillis())
 
@@ -124,7 +131,11 @@ class TimerlyForegroundService : Service() {
             mNotificationManager!!.createNotificationChannel(notificationChannel)
         }
         assert(mNotificationManager != null)
-        return mBuilder!!.build()
+        val notification = mBuilder!!.build()
+        if (isAnUpdate!!) {
+            notification.flags = Notification.FLAG_ONGOING_EVENT
+        }
+        return notification
     }
 
     private fun stopForegroundService() {
@@ -143,8 +154,6 @@ class TimerlyForegroundService : Service() {
 
         val ACTION_STOP_FOREGROUND_SERVICE = "ACTION_STOP_FOREGROUND_SERVICE"
 
-        val ACTION_PAUSE = "ACTION_PAUSE"
-
-        val ACTION_PLAY = "ACTION_PLAY"
+        val ACTION_UPDATE_NOTIFICATION_SERVICE = "ACTION_UPDATE_NOTIFICATION_SERVICE"
     }
 }

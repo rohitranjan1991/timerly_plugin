@@ -27,6 +27,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
         if (call.method.equals("getPlatformVersion")) {
             result.success("Android ${Build.VERSION.RELEASE}")
         } else if (call.method.equals("startForegroundService")) {
+            Log.d("TimerlyPlugin", "Starting Foreground Service")
             val data = call.argument<String>("data")
             EventBus.getDefault().register(this)
             val createForegroundServiceRequest = Gson().fromJson<CreateForegroundServiceRequest>(data, CreateForegroundServiceRequest::class.java)
@@ -43,6 +44,14 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
                 timerlyNotificationEventManager = null
             }
             EventBus.getDefault().unregister(this)
+        } else if (call.method.equals("updateForegroundService")) {
+            Log.d("TimerlyPlugin", "Updating Foreground Service")
+            val data = call.argument<String>("data")
+            val createForegroundServiceRequest = Gson().fromJson<CreateForegroundServiceRequest>(data, CreateForegroundServiceRequest::class.java)
+            val intent = Intent(activity, TimerlyForegroundService::class.java)
+            intent.putExtra("data", Gson().toJson(createForegroundServiceRequest))
+            intent.action = TimerlyForegroundService.ACTION_UPDATE_NOTIFICATION_SERVICE
+            activity.startService(intent)
         } else {
             result.notImplemented()
         }
