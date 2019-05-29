@@ -6,14 +6,12 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.google.gson.Gson
 import com.timerly.timerlyplugin.models.CreateForegroundServiceRequest
 import com.timerly.timerlyplugin.models.NotificationActionButton
 import com.timerly.timerlyplugin.models.TimerlyNotificationEvent
 import org.greenrobot.eventbus.EventBus
-import android.app.NotificationManager
 
 
 class TimerlyForegroundService : Service() {
@@ -45,7 +43,6 @@ class TimerlyForegroundService : Service() {
                     val createForegroundServiceRequest = Gson().fromJson(intent.extras!!.getString("data"), CreateForegroundServiceRequest::class.java)
                     val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     mNotificationManager.notify(createForegroundServiceRequest.serviceID, createNotification(createForegroundServiceRequest, true))
-                    Toast.makeText(applicationContext, "Foreground service is updated.", Toast.LENGTH_LONG).show()
                 }
                 else -> {
                     actionButtons?.let {
