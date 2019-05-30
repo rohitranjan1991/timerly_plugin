@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:timerly_plugin/models/CreateForegroundServiceRequest.dart';
@@ -19,32 +20,43 @@ class TimerlyPlugin {
 
   static Future<bool> startForegroundService(
       CreateForegroundServiceRequest createForegroundServiceRequest) async {
-    var hasStarted = await _channel.invokeMethod('startForegroundService',
-        {"data": json.encode(createForegroundServiceRequest.toJson())});
-    return hasStarted;
+    if (Platform.isAndroid) {
+      var hasStarted = await _channel.invokeMethod('startForegroundService',
+          {"data": json.encode(createForegroundServiceRequest.toJson())});
+      return hasStarted;
+    }
+    return false;
   }
 
   static Future<bool> updateForegroundService(
       CreateForegroundServiceRequest createForegroundServiceRequest) async {
-    var hasStarted = await _channel.invokeMethod('updateForegroundService',
-        {"data": json.encode(createForegroundServiceRequest.toJson())});
-    return hasStarted;
+    if (Platform.isAndroid) {
+      var hasStarted = await _channel.invokeMethod('updateForegroundService',
+          {"data": json.encode(createForegroundServiceRequest.toJson())});
+      return hasStarted;
+    }
+    return false;
   }
 
   static Future<bool> stopForegroundService() async {
-    var hasStarted = await _channel.invokeMethod('stopForegroundService');
-    return hasStarted;
+    if (Platform.isAndroid) {
+      var hasStarted = await _channel.invokeMethod('stopForegroundService');
+      return hasStarted;
+    }
+    return false;
   }
 
   static subscribeToNotificationEvents(Function func) {
-    _timerSubscription =
-        notificationEventStream.receiveBroadcastStream().listen((message) {
-      func(message);
-    });
+    if (Platform.isAndroid) {
+      _timerSubscription =
+          notificationEventStream.receiveBroadcastStream().listen((message) {
+        func(message);
+      });
+    }
   }
 
   static unsubscribeToNotificationEvents() {
-    if (_timerSubscription != null) {
+    if (Platform.isAndroid && _timerSubscription != null) {
       _timerSubscription.cancel();
       _timerSubscription = null;
     }
