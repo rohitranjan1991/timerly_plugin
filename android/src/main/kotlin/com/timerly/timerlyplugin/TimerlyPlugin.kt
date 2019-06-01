@@ -5,6 +5,7 @@ import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
 import com.timerly.timerlyplugin.models.CreateForegroundServiceRequest
+import com.timerly.timerlyplugin.models.RemoveNotificationRequest
 import com.timerly.timerlyplugin.models.TimerlyNotificationEvent
 import io.flutter.app.FlutterActivity
 import io.flutter.plugin.common.EventChannel
@@ -22,35 +23,48 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
 
     private var timerlyNotificationEventManager: TimerlyNotificationEventManager? = null
     private var eventSink: EventChannel.EventSink? = null
+    private var isForegroundServiceActive = false;
+    private var notificationIds: MutableList<Int> = mutableListOf()
 
     override fun onMethodCall(call: MethodCall, result: Result): Unit {
         if (call.method.equals("getPlatformVersion")) {
             result.success("Android ${Build.VERSION.RELEASE}")
-        } else if (call.method.equals("startForegroundService")) {
-            Log.d("TimerlyPlugin", "Starting Foreground Service")
+        } else if (call.method.equals("addNotification")) {
             val data = call.argument<String>("data")
-            EventBus.getDefault().register(this)
+            if (!EventBus.getDefault().isRegistered(this))
+                EventBus.getDefault().register(this)
             val createForegroundServiceRequest = Gson().fromJson<CreateForegroundServiceRequest>(data, CreateForegroundServiceRequest::class.java)
             val intent = Intent(activity, TimerlyForegroundService::class.java)
             intent.putExtra("data", Gson().toJson(createForegroundServiceRequest))
-            intent.action = TimerlyForegroundService.ACTION_START_FOREGROUND_SERVICE
+            intent.action = TimerlyForegroundService.ACTION_ADD_NOTIFICATION
             activity.startService(intent)
+            if (!notificationIds.contains(createForegroundServiceRequest.serviceId))
+                notificationIds.add(createForegroundServiceRequest.serviceId)
+        } else if (call.method.equals("removeNotification")) {
+            val data = call.argument<String>("data")
+            val removeNotificationRequest = Gson().fromJson<RemoveNotificationRequest>(data, RemoveNotificationRequest::class.java)
+            Log.d("TimerlyPlugin","Removing Notification");
+            if (!notificationIds.contains(removeNotificationRequest.notificationId))
+                notificationIds.remove(removeNotificationRequest.notificationId)
 
-        } else if (call.method.equals("stopForegroundService")) {
             val intent = Intent(activity, TimerlyForegroundService::class.java)
-            intent.action = TimerlyForegroundService.ACTION_STOP_FOREGROUND_SERVICE
+            intent.putExtra("data", Gson().toJson(removeNotificationRequest))
+            intent.action = TimerlyForegroundService.ACTION_REMOVE_NOTIFICATION
             activity.startService(intent)
-            if (timerlyNotificationEventManager != null) {
-                timerlyNotificationEventManager = null
-            }
-            EventBus.getDefault().unregister(this)
-        } else if (call.method.equals("updateForegroundService")) {
-            Log.d("TimerlyPlugin", "Updating Foreground Service")
+            Log.d("TimerlyPlugin","Removing Started");
+            /*if (notificationIds.isEmpty()) {
+                val intent1 = Intent(activity, TimerlyForegroundService::class.java)
+                intent1.action = TimerlyForegroundService.ACTION_STOP_SERVICE
+                activity.startService(intent1)
+                EventBus.getDefault().unregister(this)
+            }*/
+
+        } else if (call.method.equals("updateNotification")) {
             val data = call.argument<String>("data")
             val createForegroundServiceRequest = Gson().fromJson<CreateForegroundServiceRequest>(data, CreateForegroundServiceRequest::class.java)
             val intent = Intent(activity, TimerlyForegroundService::class.java)
             intent.putExtra("data", Gson().toJson(createForegroundServiceRequest))
-            intent.action = TimerlyForegroundService.ACTION_UPDATE_NOTIFICATION_SERVICE
+            intent.action = TimerlyForegroundService.ACTION_UPDATE_NOTIFICATION
             activity.startService(intent)
         } else {
             result.notImplemented()

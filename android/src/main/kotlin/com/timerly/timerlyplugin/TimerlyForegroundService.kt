@@ -9,7 +9,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.gson.Gson
 import com.timerly.timerlyplugin.models.CreateForegroundServiceRequest
-import com.timerly.timerlyplugin.models.NotificationActionButton
+import com.timerly.timerlyplugin.models.RemoveNotificationRequest
 import com.timerly.timerlyplugin.models.TimerlyNotificationEvent
 import org.greenrobot.eventbus.EventBus
 
@@ -19,7 +19,9 @@ class TimerlyForegroundService : Service() {
     private val TAG_FOREGROUND_SERVICE = "TimerlyForegroundTag"
     private var mNotificationManager: NotificationManager? = null
     private var mBuilder: NotificationCompat.Builder? = null
-    private var actionButtons: List<NotificationActionButton>? = null
+    private val gson = Gson()
+    private var isServiceForeground: Boolean = false
+    private var mainServiceId = -1;
 
 
     override fun onBind(p0: Intent?): IBinder {
@@ -27,58 +29,82 @@ class TimerlyForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
         if (intent != null) {
             val action = intent.action
             when (action) {
-                ACTION_START_FOREGROUND_SERVICE -> {
-                    startForegroundService(Gson().fromJson(intent.extras!!.getString("data"), CreateForegroundServiceRequest::class.java))
+                ACTION_ADD_NOTIFICATION -> {
+                    addNotification(gson.fromJson(intent.extras!!.getString("data"), CreateForegroundServiceRequest::class.java))
                     Log.d(TAG_FOREGROUND_SERVICE, "Foreground service is started.")
                 }
-                ACTION_STOP_FOREGROUND_SERVICE -> {
-                    stopForegroundService()
-                    Log.d(TAG_FOREGROUND_SERVICE, "Foreground service is stopped.")
+                ACTION_REMOVE_NOTIFICATION -> {
+                    val removeNotificationRequest = gson.fromJson(intent.extras!!.getString("data"), RemoveNotificationRequest::class.java)
+                    removeNotification(removeNotificationRequest);
                 }
-                ACTION_UPDATE_NOTIFICATION_SERVICE -> {
-                    Log.d(TAG_FOREGROUND_SERVICE, "Foreground notification is been updated.")
-                    val createForegroundServiceRequest = Gson().fromJson(intent.extras!!.getString("data"), CreateForegroundServiceRequest::class.java)
+                ACTION_UPDATE_NOTIFICATION -> {
+                    val createForegroundServiceRequest = gson.fromJson(intent.extras!!.getString("data"), CreateForegroundServiceRequest::class.java)
                     val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    mNotificationManager.notify(createForegroundServiceRequest.serviceID, createNotification(createForegroundServiceRequest, true))
+                    mNotificationManager.notify(createForegroundServiceRequest.serviceId, createNotification(createForegroundServiceRequest, true))
+                }
+                ACTION_STOP_SERVICE -> {
+
                 }
                 else -> {
-                    actionButtons?.let {
+                    EventBus.getDefault().post(gson.fromJson(action, TimerlyNotificationEvent::class.java))
+                    /*actionButtons?.let {
                         val actionButton = actionButtons?.find { it.command.equals(action) }
                         if (actionButton != null) {
-                            EventBus.getDefault().post(TimerlyNotificationEvent(action!!))
+                            EventBus.getDefault().post(TimerlyNotificationEvent(actionButton.notificationID, action!!))
                         }
-                    }
+                    }*/
                 }
             }
         }
         return super.onStartCommand(intent, flags, startId)
     }
 
-    /* Used to build and start foreground service. */
-    private fun startForegroundService(createForegroundServiceRequest: CreateForegroundServiceRequest) {
-        Log.d(TAG_FOREGROUND_SERVICE, "Start foreground service.")
+    /* Used to add new Notification. */
+    private fun addNotification(createForegroundServiceRequest: CreateForegroundServiceRequest) {
+        Log.d("Timerly Plugin", "Service Id: " + createForegroundServiceRequest.serviceId)
+        if (!isServiceForeground) {// Start foreground service.
+            isServiceForeground = true
+            mainServiceId = createForegroundServiceRequest.serviceId
+            startForeground(createForegroundServiceRequest.serviceId, createNotification(createForegroundServiceRequest))
+        }
+        else {
+            val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            mNotificationManager.notify(createForegroundServiceRequest.serviceId, createNotification(createForegroundServiceRequest, true))
+        }
+    }
 
-        // Start foreground service.
-        startForeground(createForegroundServiceRequest.serviceID, createNotification(createForegroundServiceRequest))
+    /**
+     * removes the notification service
+     */
+    private fun removeNotification(removeNotificationRequest: RemoveNotificationRequest) {
+        Log.d("TimerlyPlugin", "removeNotification called " + removeNotificationRequest.notificationId)
+        if(removeNotificationRequest.notificationId == mainServiceId){
+            stopForegroundService()
+        }
+        else{
+            val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            mNotificationManager.cancel(removeNotificationRequest.notificationId)
+        }
     }
 
 
     /**
      * Create and push the notification
      */
-    fun createNotification(createForegroundServiceRequest: CreateForegroundServiceRequest, isAnUpdate: Boolean? = false): Notification? {
+    private fun createNotification(createForegroundServiceRequest: CreateForegroundServiceRequest, isAnUpdate: Boolean? = false): Notification? {
         /**Creates an explicit intent for an Activity in your app */
         val resultIntent = Intent(this, TimerlyForegroundService::class.java)
         resultIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
         val resultPendingIntent = PendingIntent.getActivity(this,
-                0 /* Request code */, resultIntent,
+                createForegroundServiceRequest.serviceId /* Request code */, resultIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT)
 
-        mBuilder = NotificationCompat.Builder(this)
+        mBuilder = NotificationCompat.Builder(this, createForegroundServiceRequest.channelId)
         mBuilder!!.setSmallIcon(R.mipmap.ic_launcher)
 
         mBuilder!!.setContentTitle(createForegroundServiceRequest.title)
@@ -101,14 +127,13 @@ class TimerlyForegroundService : Service() {
 //        val largeIconBitmap = BitmapFactory.decodeResource(resources, R.drawable.icon_music_32)
 //        mBuilder!!.setLargeIcon(largeIconBitmap)
         // Make the notification max priority.
-        mBuilder!!.setPriority(NotificationManager.IMPORTANCE_HIGH)
+        mBuilder!!.setPriority(createForegroundServiceRequest.priority!!)
         // Make head-up notification.
         mBuilder!!.setFullScreenIntent(resultPendingIntent, createForegroundServiceRequest.setFullScreenIntent!!)
 
-        actionButtons = createForegroundServiceRequest.actionButtons!!
         for (notificationActionButton in createForegroundServiceRequest.actionButtons!!) {
             val actionIntent = Intent(this, TimerlyForegroundService::class.java);
-            actionIntent.action = notificationActionButton.command
+            actionIntent.action = gson.toJson(TimerlyNotificationEvent(notificationId = createForegroundServiceRequest.serviceId, command = notificationActionButton.command))
             val pendingActionIntent = PendingIntent.getService(this, 0, actionIntent, 0)
             val buttonAction = NotificationCompat.Action(android.R.drawable.ic_search_category_default, notificationActionButton.name, pendingActionIntent)
             mBuilder!!.addAction(buttonAction)
@@ -118,13 +143,13 @@ class TimerlyForegroundService : Service() {
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val importance = createForegroundServiceRequest.priority
-            val notificationChannel = NotificationChannel(createForegroundServiceRequest.channelID, createForegroundServiceRequest.channelName, importance!!)
+            val notificationChannel = NotificationChannel(createForegroundServiceRequest.channelId, createForegroundServiceRequest.channelName, importance!!)
             notificationChannel.enableLights(true)
             notificationChannel.lightColor = Color.RED
             notificationChannel.enableVibration(true)
             notificationChannel.vibrationPattern = longArrayOf(100, 200, 300, 400, 500, 400, 300, 200, 400)
             assert(mNotificationManager != null)
-            mBuilder!!.setChannelId(createForegroundServiceRequest.channelID)
+            mBuilder!!.setChannelId(createForegroundServiceRequest.channelId)
             mNotificationManager!!.createNotificationChannel(notificationChannel)
         }
         assert(mNotificationManager != null)
@@ -137,7 +162,7 @@ class TimerlyForegroundService : Service() {
 
     private fun stopForegroundService() {
         Log.d(TAG_FOREGROUND_SERVICE, "Stop foreground service.")
-
+        isServiceForeground = false
         // Stop foreground service and remove the notification.
         stopForeground(true)
 
@@ -147,10 +172,10 @@ class TimerlyForegroundService : Service() {
 
 
     companion object {
-        val ACTION_START_FOREGROUND_SERVICE = "ACTION_START_FOREGROUND_SERVICE"
 
-        val ACTION_STOP_FOREGROUND_SERVICE = "ACTION_STOP_FOREGROUND_SERVICE"
-
-        val ACTION_UPDATE_NOTIFICATION_SERVICE = "ACTION_UPDATE_NOTIFICATION_SERVICE"
+        val ACTION_UPDATE_NOTIFICATION = "ACTION_UPDATE_NOTIFICATION"
+        val ACTION_REMOVE_NOTIFICATION = "ACTION_REMOVE_NOTIFICATION"
+        val ACTION_ADD_NOTIFICATION = "ACTION_ADD_NOTIFICATION"
+        val ACTION_STOP_SERVICE = "ACTION_STOP_SERVICE"
     }
 }

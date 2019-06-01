@@ -11,7 +11,7 @@ enum notificationPriority {
 }
 
 class CreateForegroundServiceRequest {
-  int serviceID;
+  int serviceId;
   String title;
   String message;
   String bigContentTitle;
@@ -20,11 +20,11 @@ class CreateForegroundServiceRequest {
   int priority;
   bool setFullScreenIntent;
   String channelName;
-  String channelID;
+  String channelId;
   List<NotificationActionButton> actionButtons;
 
   CreateForegroundServiceRequest(
-      @required this.serviceID,
+      @required this.serviceId,
       @required this.title,
       @required this.message,
       this.bigContentTitle,
@@ -33,11 +33,11 @@ class CreateForegroundServiceRequest {
       this.priority,
       this.setFullScreenIntent,
       this.channelName,
-      this.channelID,
+      this.channelId,
       this.actionButtons);
 
   CreateForegroundServiceRequest.fromJson(Map<String, dynamic> json)
-      : serviceID = json['serviceID'],
+      : serviceId = json['serviceId'],
         title = json['title'],
         message = json['message'],
         bigContentTitle = json['bigContentTitle'],
@@ -46,13 +46,13 @@ class CreateForegroundServiceRequest {
         priority = json['priority'],
         setFullScreenIntent = json['setFullScreenIntent'],
         channelName = json['channelName'],
-        channelID = json['channelID'],
+        channelId = json['channelId'],
         actionButtons = json['actionButtons']
             .map((i) => NotificationActionButton.fromJson(i))
             .toList();
 
   Map<String, dynamic> toJson() => {
-        'serviceID': serviceID,
+        'serviceId': serviceId,
         'title': title,
         'message': message,
         'bigContentTitle': bigContentTitle,
@@ -61,7 +61,7 @@ class CreateForegroundServiceRequest {
         'priority': priority,
         'setFullScreenIntent': setFullScreenIntent,
         'channelName': channelName,
-        'channelID': channelID,
+        'channelId': channelId,
         'actionButtons': actionButtons.map((f) => f.toJson()).toList(),
       };
 }
