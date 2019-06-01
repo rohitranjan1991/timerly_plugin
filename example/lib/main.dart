@@ -1,12 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'dart:async';
-
 import 'package:flutter/services.dart';
-import 'package:timerly_plugin/models/CreateForegroundServiceRequest.dart';
-import 'package:timerly_plugin/models/NotificaitonActionButton.dart';
-import 'package:timerly_plugin/models/RemoveNotificationRequet.dart';
+import 'package:timerly_plugin/models/Timer.dart';
 import 'package:timerly_plugin/timerly_plugin.dart';
 
 void main() => runApp(new MyApp());
@@ -18,6 +15,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
+  int timerValue = 0;
 
   @override
   void initState() {
@@ -25,8 +23,11 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
 
     TimerlyPlugin.subscribeToNotificationEvents((message) {
-      print("received Message, Yepii");
-      print(message);
+      var msg = json.decode(message);
+      setState(() {
+        timerValue = json.decode(msg["data"])["currentTime"];
+      });
+      print("${json.decode(msg["data"])}");
     });
   }
 
@@ -50,30 +51,6 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  _subscription1(message) {
-    var decodedMessage = json.decode(message);
-    if (decodedMessage["notificationId"] != 1) return;
-    switch (decodedMessage["command"]) {
-      case "PLAY":
-        break;
-      case "PAUSE":
-        TimerlyPlugin.removeNotification(RemoveNotificationRequest(1));
-        break;
-    }
-  }
-
-  _subscription2(message) {
-    var decodedMessage = json.decode(message);
-    if (decodedMessage["notificationId"] != 2) return;
-    switch (decodedMessage["command"]) {
-      case "PLAY":
-        break;
-      case "PAUSE":
-        TimerlyPlugin.removeNotification(RemoveNotificationRequest(2));
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
@@ -85,59 +62,82 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             children: <Widget>[
               new Text('Running on: $_platformVersion\n'),
+              Text("Timer Value = ${timerValue}"),
               RaisedButton(
                   onPressed: () {
-                    TimerlyPlugin.addNotification(
-                        new CreateForegroundServiceRequest(
-                            120958,
-                            "Some Title",
-                            "Some Message",
-                            "Some Big Title",
-                            "Some Big Message",
-                            false,
-                            notificationPriority.IMPORTANCE_MAX.index,
-                            true,
-                            "sampleChannel",
-                            "10004", [
-                      new NotificationActionButton(1, "Play", "PLAY"),
-                      new NotificationActionButton(2, "Pause", "PAUSE")
-                    ]));
-                    TimerlyPlugin.subscribeToNotificationEvents(_subscription1);
+                    TimerlyPlugin.addTimer(TimerData(1, "timer 1", 0, []));
                   },
-                  child: Text("Start Foreground Service")),
+                  child: Text("Add Timer")),
               RaisedButton(
                   onPressed: () {
-                    print("Stoppinngggggg");
-                    TimerlyPlugin.removeNotification(RemoveNotificationRequest(120958));
-                  }, child: Text("Stop Foreground Service")),
-              RaisedButton(onPressed: () {}, child: Text("Change Text")),
+                    /*new CreateForegroundServiceRequest(
+                        9213,
+                        "Timerly StopWatch Widget",
+                        "Timer Stoped",
+                        "Timerly StopWatch Widget",
+                        "Timer Stoped",
+                        false,
+                        notificationPriority.IMPORTANCE_LOW.index,
+                        true,
+                        "Timerly Stopwatch Notification",
+                        "100456", [])*/
+                    TimerlyPlugin.startTimer(1);
+                  },
+                  child: Text("Start Timer")),
+              RaisedButton(
+                  onPressed: () {
+                    TimerlyPlugin.lapTimer(1);
+                  },
+                  child: Text("Lap Timer")),
+              RaisedButton(
+                  onPressed: () {
+                    TimerlyPlugin.stopTimer(1);
+                  },
+                  child: Text("Stop Timer")),
+              RaisedButton(
+                  onPressed: () {
+                    TimerlyPlugin.removeTimer(1);
+                  },
+                  child: Text("Remove Timer")),
               SizedBox(
-                height: 20.0,
+                height: 30,
               ),
               RaisedButton(
                   onPressed: () {
-                    TimerlyPlugin.addNotification(
-                        new CreateForegroundServiceRequest(
-                            278345,
-                            "Some Title 2",
-                            "Some Message 2",
-                            "Some Big Title 2",
-                            "Some Big Message 2",
-                            false,
-                            notificationPriority.IMPORTANCE_MAX.index,
-                            true,
-                            "sampleChannel",
-                            "10004", [
-                      new NotificationActionButton(1, "Play", "PLAY"),
-                      new NotificationActionButton(2, "Pause", "PAUSE")
-                    ]));
-                    TimerlyPlugin.subscribeToNotificationEvents(_subscription2);
+                    TimerlyPlugin.addTimer(TimerData(2, "timer 2", 0, []));
                   },
-                  child: Text("Start Foreground Service 2")),
+                  child: Text("Add Timer")),
               RaisedButton(
                   onPressed: () {
-                    TimerlyPlugin.removeNotification(RemoveNotificationRequest(278345));
-                  }, child: Text("Stop Foreground Service 2")),
+                    /*new CreateForegroundServiceRequest(
+                        9223,
+                        "Timerly StopWatch Widget",
+                        "Timer Stoped",
+                        "Timerly StopWatch Widget",
+                        "Timer Stoped",
+                        false,
+                        notificationPriority.IMPORTANCE_LOW.index,
+                        true,
+                        "Timerly Stopwatch Notification",
+                        "200456", [])*/
+                    TimerlyPlugin.startTimer(2);
+                  },
+                  child: Text("Start Timer")),
+              RaisedButton(
+                  onPressed: () {
+                    TimerlyPlugin.lapTimer(2);
+                  },
+                  child: Text("Lap Timer")),
+              RaisedButton(
+                  onPressed: () {
+                    TimerlyPlugin.stopTimer(2);
+                  },
+                  child: Text("Stop Timer")),
+              RaisedButton(
+                  onPressed: () {
+                    TimerlyPlugin.removeTimer(2);
+                  },
+                  child: Text("Remove Timer")),
             ],
           ),
         ),

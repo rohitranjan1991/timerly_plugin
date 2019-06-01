@@ -4,9 +4,9 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
-import com.timerly.timerlyplugin.models.CreateForegroundServiceRequest
-import com.timerly.timerlyplugin.models.RemoveNotificationRequest
-import com.timerly.timerlyplugin.models.TimerlyNotificationEvent
+import com.timerly.timerlyplugin.managers.StopwatchManager
+import com.timerly.timerlyplugin.managers.TimerManager
+import com.timerly.timerlyplugin.models.*
 import io.flutter.app.FlutterActivity
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
@@ -21,52 +21,53 @@ import org.greenrobot.eventbus.ThreadMode
 
 class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventChannel.StreamHandler {
 
-    private var timerlyNotificationEventManager: TimerlyNotificationEventManager? = null
     private var eventSink: EventChannel.EventSink? = null
     private var isForegroundServiceActive = false;
     private var notificationIds: MutableList<Int> = mutableListOf()
 
     override fun onMethodCall(call: MethodCall, result: Result): Unit {
+        if (!EventBus.getDefault().isRegistered(this))
+            EventBus.getDefault().register(this)
         if (call.method.equals("getPlatformVersion")) {
             result.success("Android ${Build.VERSION.RELEASE}")
-        } else if (call.method.equals("addNotification")) {
-            val data = call.argument<String>("data")
-            if (!EventBus.getDefault().isRegistered(this))
-                EventBus.getDefault().register(this)
-            val createForegroundServiceRequest = Gson().fromJson<CreateForegroundServiceRequest>(data, CreateForegroundServiceRequest::class.java)
-            val intent = Intent(activity, TimerlyForegroundService::class.java)
-            intent.putExtra("data", Gson().toJson(createForegroundServiceRequest))
-            intent.action = TimerlyForegroundService.ACTION_ADD_NOTIFICATION
-            activity.startService(intent)
-            if (!notificationIds.contains(createForegroundServiceRequest.serviceId))
-                notificationIds.add(createForegroundServiceRequest.serviceId)
-        } else if (call.method.equals("removeNotification")) {
-            val data = call.argument<String>("data")
-            val removeNotificationRequest = Gson().fromJson<RemoveNotificationRequest>(data, RemoveNotificationRequest::class.java)
-            Log.d("TimerlyPlugin","Removing Notification");
-            if (!notificationIds.contains(removeNotificationRequest.notificationId))
-                notificationIds.remove(removeNotificationRequest.notificationId)
+        }
+        //EventBus.getDefault().unregister(this)
 
-            val intent = Intent(activity, TimerlyForegroundService::class.java)
-            intent.putExtra("data", Gson().toJson(removeNotificationRequest))
-            intent.action = TimerlyForegroundService.ACTION_REMOVE_NOTIFICATION
-            activity.startService(intent)
-            Log.d("TimerlyPlugin","Removing Started");
-            /*if (notificationIds.isEmpty()) {
-                val intent1 = Intent(activity, TimerlyForegroundService::class.java)
-                intent1.action = TimerlyForegroundService.ACTION_STOP_SERVICE
-                activity.startService(intent1)
-                EventBus.getDefault().unregister(this)
-            }*/
+        // Timer Commands
 
-        } else if (call.method.equals("updateNotification")) {
+        else if (call.method.equals("addTimer")) {
             val data = call.argument<String>("data")
-            val createForegroundServiceRequest = Gson().fromJson<CreateForegroundServiceRequest>(data, CreateForegroundServiceRequest::class.java)
-            val intent = Intent(activity, TimerlyForegroundService::class.java)
-            intent.putExtra("data", Gson().toJson(createForegroundServiceRequest))
-            intent.action = TimerlyForegroundService.ACTION_UPDATE_NOTIFICATION
-            activity.startService(intent)
-        } else {
+            val timer = Gson().fromJson<Timer>(data, Timer::class.java)
+            TimerManager.addNewTimer(timer)
+        } else if (call.method.equals("startTimer")) {
+            val data = call.argument<String>("data")
+            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.startTimer(timer.id, activity)
+        } else if (call.method.equals("stopTimer")) {
+            val data = call.argument<String>("data")
+            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.stopTimer(timer.id, activity)
+        } else if (call.method.equals("removeTimer")) {
+            val data = call.argument<String>("data")
+            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.removeTimer(timer.id)
+        } else if (call.method.equals("lapTimer")) {
+            val data = call.argument<String>("data")
+            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.lapTimer(timer.id)
+        } else if (call.method.equals("resetTimer")) {
+            val data = call.argument<String>("data")
+            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.resetTimer(timer.id, activity)
+        } else if (call.method.equals("updateTimer")) {
+            val data = call.argument<String>("data")
+            val timer = Gson().fromJson<Timer>(data, Timer::class.java)
+            TimerManager.updateTimer(timer)
+        }
+
+        // Stopwatch Commands
+
+        else {
             result.notImplemented()
         }
     }
@@ -77,7 +78,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val instance = TimerlyPlugin(registrar.activity() as FlutterActivity)
             val channel = MethodChannel(registrar.messenger(), "timerly_plugin")
             channel.setMethodCallHandler(instance)
-            val eventChannel = EventChannel(registrar.messenger(), "com.timerly/notification/stream")
+            val eventChannel = EventChannel(registrar.messenger(), "com.timerly/notification/event")
             eventChannel.setStreamHandler(instance)
         }
     }
@@ -85,18 +86,22 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
     override fun onListen(p0: Any?, p1: EventChannel.EventSink?) {
         Log.w("TimerlyNotification", "onListen")
         eventSink = p1
+        TimerManager.setEventSink(p1)
+        StopwatchManager.setEventSink(p1)
     }
 
     override fun onCancel(p0: Any?) {
         Log.w("TimerlyNotification", "cancelling listener")
         eventSink = null
+        TimerManager.unsetEventSink()
+        StopwatchManager.unsetEventSink()
 
     }
 
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onNotificationEvent(notificationEvent: TimerlyNotificationEvent) {
+    fun onNotificationEvent(timerlyTimerEvent: TimerlyTimerEvent) {
         Log.d("TimerlyNotification", "received EventBus Notification")
-        eventSink?.success(Gson().toJson(notificationEvent))
+        TimerManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
     }
 }

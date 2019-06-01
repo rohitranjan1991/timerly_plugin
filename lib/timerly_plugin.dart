@@ -5,66 +5,94 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:timerly_plugin/models/CreateForegroundServiceRequest.dart';
 
+import 'models/GenericRequest.dart';
 import 'models/RemoveNotificationRequet.dart';
+import 'models/Timer.dart';
 
 class TimerlyPlugin {
   static const codec = JSONMessageCodec();
   static const MethodChannel _channel = const MethodChannel('timerly_plugin');
   static const notificationEventStream =
-  const EventChannel('com.timerly/notification/stream');
+      const EventChannel('com.timerly/notification/event');
+
   static List<Function> subscriberList1 = new List();
-  static StreamSubscription _timerSubscription;
+
+  static StreamSubscription _notificationSubscription;
 
   static Future<String> get platformVersion async {
     final String version = await _channel.invokeMethod('getPlatformVersion');
     return version;
   }
 
-  static Future<bool> addNotification(
-      CreateForegroundServiceRequest createForegroundServiceRequest) async {
-    if (Platform.isAndroid) {
-      var hasStarted = await _channel.invokeMethod('addNotification',
-          {"data": json.encode(createForegroundServiceRequest.toJson())});
-      return hasStarted;
-    }
-    return false;
-  }
-
-  static Future<bool> updateForegroundService(
-      CreateForegroundServiceRequest createForegroundServiceRequest) async {
-    if (Platform.isAndroid) {
-      var hasStarted = await _channel.invokeMethod('updateNotification',
-          {"data": json.encode(createForegroundServiceRequest.toJson())});
-      return hasStarted;
-    }
-    return false;
-  }
-
-  static Future<bool> removeNotification(
-      RemoveNotificationRequest removeNotificationRequest) async {
-    var hasStarted = await _channel.invokeMethod('removeNotification',{"data": json.encode(removeNotificationRequest.toJson())});
-    return hasStarted;
-  }
-
   static subscribeToNotificationEvents(Function func) {
     if (Platform.isAndroid) {
       subscriberList1.add(func);
-      if (_timerSubscription == null)
-        _timerSubscription =
+      if (_notificationSubscription == null)
+        _notificationSubscription =
             notificationEventStream.receiveBroadcastStream().listen((message) {
-              subscriberList1.forEach((f) => f(message));
-            });
+//              print(message);
+          subscriberList1.forEach((f) => f(message));
+        });
     }
   }
 
   static unsubscribeToNotificationEvents(Function func) {
-    if (Platform.isAndroid && _timerSubscription != null) {
+    if (Platform.isAndroid && _notificationSubscription != null) {
       if (subscriberList1.isNotEmpty) {
         subscriberList1.remove(func);
       } else {
-        _timerSubscription.cancel();
-        _timerSubscription = null;
+        _notificationSubscription.cancel();
+        _notificationSubscription = null;
       }
+    }
+  }
+
+  static addTimer(TimerData timer) async {
+    if (Platform.isAndroid) {
+      await _channel
+          .invokeMethod('addTimer', {"data": json.encode(timer.toJson())});
+    }
+  }
+
+  static startTimer(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'startTimer', {"data": json.encode(GenericRequest(id).toJson())});
+    }
+  }
+
+  static stopTimer(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'stopTimer', {"data": json.encode(GenericRequest(id).toJson())});
+    }
+  }
+
+  static removeTimer(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'removeTimer', {"data": json.encode(GenericRequest(id).toJson())});
+    }
+  }
+
+  static lapTimer(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'lapTimer', {"data": json.encode(GenericRequest(id).toJson())});
+    }
+  }
+
+  static resetTimer(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'resetTimer', {"data": json.encode(GenericRequest(id).toJson())});
+    }
+  }
+
+  static updateTimer(TimerData timer) async {
+    if (Platform.isAndroid) {
+      await _channel
+          .invokeMethod('updateTimer', {"data": json.encode(timer.toJson())});
     }
   }
 }

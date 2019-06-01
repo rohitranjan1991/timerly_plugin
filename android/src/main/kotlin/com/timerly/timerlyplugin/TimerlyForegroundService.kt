@@ -10,7 +10,7 @@ import androidx.core.app.NotificationCompat
 import com.google.gson.Gson
 import com.timerly.timerlyplugin.models.CreateForegroundServiceRequest
 import com.timerly.timerlyplugin.models.RemoveNotificationRequest
-import com.timerly.timerlyplugin.models.TimerlyNotificationEvent
+import com.timerly.timerlyplugin.models.TimerlyTimerEvent
 import org.greenrobot.eventbus.EventBus
 
 
@@ -50,13 +50,7 @@ class TimerlyForegroundService : Service() {
 
                 }
                 else -> {
-                    EventBus.getDefault().post(gson.fromJson(action, TimerlyNotificationEvent::class.java))
-                    /*actionButtons?.let {
-                        val actionButton = actionButtons?.find { it.command.equals(action) }
-                        if (actionButton != null) {
-                            EventBus.getDefault().post(TimerlyNotificationEvent(actionButton.notificationID, action!!))
-                        }
-                    }*/
+                    EventBus.getDefault().post(gson.fromJson(action, TimerlyTimerEvent::class.java))
                 }
             }
         }
@@ -70,8 +64,7 @@ class TimerlyForegroundService : Service() {
             isServiceForeground = true
             mainServiceId = createForegroundServiceRequest.serviceId
             startForeground(createForegroundServiceRequest.serviceId, createNotification(createForegroundServiceRequest))
-        }
-        else {
+        } else {
             val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             mNotificationManager.notify(createForegroundServiceRequest.serviceId, createNotification(createForegroundServiceRequest, true))
         }
@@ -82,10 +75,9 @@ class TimerlyForegroundService : Service() {
      */
     private fun removeNotification(removeNotificationRequest: RemoveNotificationRequest) {
         Log.d("TimerlyPlugin", "removeNotification called " + removeNotificationRequest.notificationId)
-        if(removeNotificationRequest.notificationId == mainServiceId){
+        if (removeNotificationRequest.notificationId == mainServiceId) {
             stopForegroundService()
-        }
-        else{
+        } else {
             val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             mNotificationManager.cancel(removeNotificationRequest.notificationId)
         }
@@ -133,7 +125,7 @@ class TimerlyForegroundService : Service() {
 
         for (notificationActionButton in createForegroundServiceRequest.actionButtons!!) {
             val actionIntent = Intent(this, TimerlyForegroundService::class.java);
-            actionIntent.action = gson.toJson(TimerlyNotificationEvent(notificationId = createForegroundServiceRequest.serviceId, command = notificationActionButton.command))
+            actionIntent.action = gson.toJson(TimerlyTimerEvent(id = createForegroundServiceRequest.serviceId, command = notificationActionButton.command))
             val pendingActionIntent = PendingIntent.getService(this, 0, actionIntent, 0)
             val buttonAction = NotificationCompat.Action(android.R.drawable.ic_search_category_default, notificationActionButton.name, pendingActionIntent)
             mBuilder!!.addAction(buttonAction)
