@@ -3,7 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:timerly_plugin/models/Timer.dart';
+import 'package:timerly_plugin/models/StopwatchData.dart';
+import 'package:timerly_plugin/models/TimerData.dart';
 import 'package:timerly_plugin/timerly_plugin.dart';
 
 void main() => runApp(new MyApp());
@@ -62,82 +63,52 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             children: <Widget>[
               new Text('Running on: $_platformVersion\n'),
-              Text("Timer Value = ${timerValue}"),
+              Text("Stopwatch Value = $timerValue"),
               RaisedButton(
                   onPressed: () {
-                    TimerlyPlugin.addTimer(TimerData(1, "timer 1", 0, []));
+                    TimerlyPlugin.addStopwatch(
+                        StopwatchData(1, "stopwatch 1", 10, 0));
                   },
-                  child: Text("Add Timer")),
+                  child: Text("Add StopWatch")),
               RaisedButton(
                   onPressed: () {
-                    /*new CreateForegroundServiceRequest(
-                        9213,
-                        "Timerly StopWatch Widget",
-                        "Timer Stoped",
-                        "Timerly StopWatch Widget",
-                        "Timer Stoped",
-                        false,
-                        notificationPriority.IMPORTANCE_LOW.index,
-                        true,
-                        "Timerly Stopwatch Notification",
-                        "100456", [])*/
-                    TimerlyPlugin.startTimer(1);
+                    TimerlyPlugin.startStopwatch(1);
                   },
-                  child: Text("Start Timer")),
+                  child: Text("Start StopWatch")),
               RaisedButton(
                   onPressed: () {
-                    TimerlyPlugin.lapTimer(1);
+                    TimerlyPlugin.stopStopwatch(1);
                   },
-                  child: Text("Lap Timer")),
+                  child: Text("Stop StopWatch")),
               RaisedButton(
                   onPressed: () {
-                    TimerlyPlugin.stopTimer(1);
+                    TimerlyPlugin.removeStopwatch(1);
                   },
-                  child: Text("Stop Timer")),
-              RaisedButton(
-                  onPressed: () {
-                    TimerlyPlugin.removeTimer(1);
-                  },
-                  child: Text("Remove Timer")),
+                  child: Text("Remove StopWatch")),
               SizedBox(
                 height: 30,
               ),
               RaisedButton(
                   onPressed: () {
-                    TimerlyPlugin.addTimer(TimerData(2, "timer 2", 0, []));
+                    TimerlyPlugin.addStopwatch(
+                        StopwatchData(2, "stopwatch 2", 40, 0));
                   },
-                  child: Text("Add Timer")),
+                  child: Text("Add StopWatch")),
               RaisedButton(
                   onPressed: () {
-                    /*new CreateForegroundServiceRequest(
-                        9223,
-                        "Timerly StopWatch Widget",
-                        "Timer Stoped",
-                        "Timerly StopWatch Widget",
-                        "Timer Stoped",
-                        false,
-                        notificationPriority.IMPORTANCE_LOW.index,
-                        true,
-                        "Timerly Stopwatch Notification",
-                        "200456", [])*/
-                    TimerlyPlugin.startTimer(2);
+                    TimerlyPlugin.startStopwatch(2);
                   },
-                  child: Text("Start Timer")),
+                  child: Text("Start StopWatch")),
               RaisedButton(
                   onPressed: () {
-                    TimerlyPlugin.lapTimer(2);
+                    TimerlyPlugin.stopStopwatch(2);
                   },
-                  child: Text("Lap Timer")),
+                  child: Text("Stop StopWatch")),
               RaisedButton(
                   onPressed: () {
-                    TimerlyPlugin.stopTimer(2);
+                    TimerlyPlugin.removeStopwatch(2);
                   },
-                  child: Text("Stop Timer")),
-              RaisedButton(
-                  onPressed: () {
-                    TimerlyPlugin.removeTimer(2);
-                  },
-                  child: Text("Remove Timer")),
+                  child: Text("Remove StopWatch")),
             ],
           ),
         ),

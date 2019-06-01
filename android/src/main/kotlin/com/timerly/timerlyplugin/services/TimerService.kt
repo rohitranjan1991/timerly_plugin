@@ -2,12 +2,13 @@ package com.timerly.timerlyplugin.services
 
 import android.util.Log
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 object TimerService {
 
     var isTimerStarted = false
     private var timer: Timer? = null
-    private val callbackList: MutableMap<Int, ITimerTickCallback> = mutableMapOf()
+    private val callbackList: ConcurrentHashMap<Int, ITimerTickCallback> = ConcurrentHashMap()
 
     fun startTimer() {
         if (timer == null) {

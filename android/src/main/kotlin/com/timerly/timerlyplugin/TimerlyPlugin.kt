@@ -1,6 +1,5 @@
 package com.timerly.timerlyplugin
 
-import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
@@ -67,7 +66,31 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
 
         // Stopwatch Commands
 
-        else {
+        else if (call.method.equals("addStopwatch")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<Stopwatch>(data, Stopwatch::class.java)
+            StopwatchManager.addNewStopwatch(stopwatch)
+        } else if (call.method.equals("startStopwatch")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            StopwatchManager.startStopwatch(stopwatch.id, activity)
+        } else if (call.method.equals("stopStopwatch")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            StopwatchManager.stopStopwatch(stopwatch.id, activity)
+        } else if (call.method.equals("removeStopwatch")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            StopwatchManager.removeStopwatch(stopwatch.id)
+        } else if (call.method.equals("resetStopwatch")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            StopwatchManager.resetStopwatch(stopwatch.id, activity)
+        } else if (call.method.equals("updateStopwatch")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<Stopwatch>(data, Stopwatch::class.java)
+            StopwatchManager.updateStopwatch(stopwatch)
+        } else {
             result.notImplemented()
         }
     }
@@ -103,5 +126,6 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
     fun onNotificationEvent(timerlyTimerEvent: TimerlyTimerEvent) {
         Log.d("TimerlyNotification", "received EventBus Notification")
         TimerManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
+        StopwatchManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
     }
 }

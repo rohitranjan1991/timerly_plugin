@@ -7,7 +7,8 @@ import 'package:timerly_plugin/models/CreateForegroundServiceRequest.dart';
 
 import 'models/GenericRequest.dart';
 import 'models/RemoveNotificationRequet.dart';
-import 'models/Timer.dart';
+import 'models/StopwatchData.dart';
+import 'models/TimerData.dart';
 
 class TimerlyPlugin {
   static const codec = JSONMessageCodec();
@@ -93,6 +94,49 @@ class TimerlyPlugin {
     if (Platform.isAndroid) {
       await _channel
           .invokeMethod('updateTimer', {"data": json.encode(timer.toJson())});
+    }
+  }
+
+  // Stopwatch Commands
+  static addStopwatch(StopwatchData stopwatch) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'addStopwatch', {"data": json.encode(stopwatch.toJson())});
+    }
+  }
+
+  static startStopwatch(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'startStopwatch', {"data": json.encode(GenericRequest(id).toJson())});
+    }
+  }
+
+  static stopStopwatch(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'stopStopwatch', {"data": json.encode(GenericRequest(id).toJson())});
+    }
+  }
+
+  static removeStopwatch(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod('removeStopwatch',
+          {"data": json.encode(GenericRequest(id).toJson())});
+    }
+  }
+
+  static resetStopwatch(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'resetStopwatch', {"data": json.encode(GenericRequest(id).toJson())});
+    }
+  }
+
+  static updateStopwatch(StopwatchData stopwatch) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'updateStopwatch', {"data": json.encode(stopwatch.toJson())});
     }
   }
 }

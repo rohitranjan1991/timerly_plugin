@@ -116,10 +116,6 @@ class TimerlyForegroundService : Service() {
 
         mBuilder!!.setWhen(System.currentTimeMillis())
 
-//        val largeIconBitmap = BitmapFactory.decodeResource(resources, R.drawable.icon_music_32)
-//        mBuilder!!.setLargeIcon(largeIconBitmap)
-        // Make the notification max priority.
-        mBuilder!!.setPriority(createForegroundServiceRequest.priority!!)
         // Make head-up notification.
         mBuilder!!.setFullScreenIntent(resultPendingIntent, createForegroundServiceRequest.setFullScreenIntent!!)
 
@@ -134,8 +130,9 @@ class TimerlyForegroundService : Service() {
         mNotificationManager = applicationContext!!.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val importance = createForegroundServiceRequest.priority
-            val notificationChannel = NotificationChannel(createForegroundServiceRequest.channelId, createForegroundServiceRequest.channelName, importance!!)
+            val importance = createForegroundServiceRequest.channelPriority
+            mBuilder!!.setPriority(createForegroundServiceRequest.channelPriority)
+            val notificationChannel = NotificationChannel(createForegroundServiceRequest.channelId, createForegroundServiceRequest.channelName, importance)
             notificationChannel.enableLights(true)
             notificationChannel.lightColor = Color.RED
             notificationChannel.enableVibration(true)
@@ -143,6 +140,9 @@ class TimerlyForegroundService : Service() {
             assert(mNotificationManager != null)
             mBuilder!!.setChannelId(createForegroundServiceRequest.channelId)
             mNotificationManager!!.createNotificationChannel(notificationChannel)
+        } else {
+            // Make the notification max priority.
+            mBuilder!!.setPriority(createForegroundServiceRequest.priority!!)
         }
         assert(mNotificationManager != null)
         val notification = mBuilder!!.build()

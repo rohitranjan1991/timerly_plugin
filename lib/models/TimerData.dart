@@ -21,6 +21,3 @@ class TimerData {
         "laps": laps.map((f) => f.toJson()).toList()
       };
 }
-
-//data class Lap(val count: Int, val atTime: Long)
-//data class Timer(val id: Int, val name: String, var currentTime: Long, val laps: MutableList<Lap>? = mutableListOf())
