@@ -12,6 +12,7 @@ enum notificationPriority {
 
 class CreateForegroundServiceRequest {
   int serviceId;
+  int widgetType;
   String title;
   String message;
   String bigContentTitle;
@@ -25,6 +26,7 @@ class CreateForegroundServiceRequest {
 
   CreateForegroundServiceRequest(
       @required this.serviceId,
+      @required this.widgetType,
       @required this.title,
       @required this.message,
       this.bigContentTitle,
@@ -38,6 +40,7 @@ class CreateForegroundServiceRequest {
 
   CreateForegroundServiceRequest.fromJson(Map<String, dynamic> json)
       : serviceId = json['serviceId'],
+        widgetType = json['widgetType'],
         title = json['title'],
         message = json['message'],
         bigContentTitle = json['bigContentTitle'],
@@ -53,6 +56,7 @@ class CreateForegroundServiceRequest {
 
   Map<String, dynamic> toJson() => {
         'serviceId': serviceId,
+        'widgetType': widgetType,
         'title': title,
         'message': message,
         'bigContentTitle': bigContentTitle,

@@ -3,6 +3,8 @@ package com.timerly.timerlyplugin
 import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.timerly.timerlyplugin.managers.StopwatchManager
 import com.timerly.timerlyplugin.managers.TimerManager
 import com.timerly.timerlyplugin.models.*
@@ -32,6 +34,16 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
         }
         //EventBus.getDefault().unregister(this)
 
+        else if (call.method.equals("getAllWidgets")) {
+            val response = JsonObject();
+            val allTimers = JsonArray();
+            val allStopwatches = JsonArray();
+            TimerManager.getAllTimerData().forEach { allTimers.add(Utils.gson.toJson(it)) }
+            StopwatchManager.getAllStopwatchesData().forEach { allStopwatches.add(Utils.gson.toJson(it)) }
+            response.add("timers", allTimers)
+            response.add("stopwatches", allStopwatches)
+            result.success(response.toString());
+        }
         // Timer Commands
 
         else if (call.method.equals("addTimer")) {
@@ -58,10 +70,11 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val data = call.argument<String>("data")
             val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
             TimerManager.resetTimer(timer.id, activity)
-        } else if (call.method.equals("updateTimer")) {
+        } else if (call.method.equals("updateTimerName")) {
+            Log.d("TimerlyPlugin","UPDATE TIMER NAME CALLED")
             val data = call.argument<String>("data")
-            val timer = Gson().fromJson<Timer>(data, Timer::class.java)
-            TimerManager.updateTimer(timer)
+            val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
+            TimerManager.updateTimerName(gr.id, gr.arg1 as String)
         }
 
         // Stopwatch Commands

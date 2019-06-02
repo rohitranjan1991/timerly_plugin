@@ -121,7 +121,7 @@ class TimerlyForegroundService : Service() {
 
         for (notificationActionButton in createForegroundServiceRequest.actionButtons!!) {
             val actionIntent = Intent(this, TimerlyForegroundService::class.java);
-            actionIntent.action = gson.toJson(TimerlyTimerEvent(id = createForegroundServiceRequest.serviceId, command = notificationActionButton.command))
+            actionIntent.action = gson.toJson(TimerlyTimerEvent(id = createForegroundServiceRequest.serviceId, command = notificationActionButton.command, widgetType = createForegroundServiceRequest.widgetType))
             val pendingActionIntent = PendingIntent.getService(this, 0, actionIntent, 0)
             val buttonAction = NotificationCompat.Action(android.R.drawable.ic_search_category_default, notificationActionButton.name, pendingActionIntent)
             mBuilder!!.addAction(buttonAction)
