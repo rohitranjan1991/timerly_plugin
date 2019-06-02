@@ -71,7 +71,6 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
             TimerManager.resetTimer(timer.id, activity)
         } else if (call.method.equals("updateTimerName")) {
-            Log.d("TimerlyPlugin","UPDATE TIMER NAME CALLED")
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
             TimerManager.updateTimerName(gr.id, gr.arg1 as String)
@@ -99,10 +98,14 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val data = call.argument<String>("data")
             val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
             StopwatchManager.resetStopwatch(stopwatch.id, activity)
-        } else if (call.method.equals("updateStopwatch")) {
+        } else if (call.method.equals("updateStopwatchName")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<Stopwatch>(data, Stopwatch::class.java)
-            StopwatchManager.updateStopwatch(stopwatch)
+            val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
+            StopwatchManager.updateStopwatchName(gr.id, gr.arg1 as String)
+        } else if (call.method.equals("updateInitialTimeStopwatch")) {
+            val data = call.argument<String>("data")
+            val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
+            StopwatchManager.updateInitialTimeStopwatch(gr.id, (gr.arg1 as Double).toLong())
         } else {
             result.notImplemented()
         }

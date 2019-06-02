@@ -15,7 +15,7 @@ class TimerlyPlugin {
   static const codec = JSONMessageCodec();
   static const MethodChannel _channel = const MethodChannel('timerly_plugin');
   static const notificationEventStream =
-  const EventChannel('com.timerly/notification/event');
+      const EventChannel('com.timerly/notification/event');
 
   static List<Function> subscriberList1 = new List();
 
@@ -33,8 +33,8 @@ class TimerlyPlugin {
         _notificationSubscription =
             notificationEventStream.receiveBroadcastStream().listen((message) {
 //              print(message);
-              subscriberList1.forEach((f) => f(message));
-            });
+          subscriberList1.forEach((f) => f(message));
+        });
     }
   }
 
@@ -98,7 +98,6 @@ class TimerlyPlugin {
   }
 
   static updateTimerName(GenericRequest2 gr) async {
-    print("grrrrrrrrrrrrrrrr : " + gr.arg1);
     if (Platform.isAndroid) {
       await _channel
           .invokeMethod('updateTimerName', {"data": json.encode(gr.toJson())});
@@ -141,10 +140,17 @@ class TimerlyPlugin {
     }
   }
 
-  static updateStopwatch(StopwatchData stopwatch) async {
+  static updateStopwatchInitialTimer(GenericRequest2 gr) async {
+    if (Platform.isAndroid) {
+      await _channel
+          .invokeMethod('updateInitialTimeStopwatch', {"data": json.encode(gr.toJson())});
+    }
+  }
+
+  static updateStopwatchName(GenericRequest2 gr) async {
     if (Platform.isAndroid) {
       await _channel.invokeMethod(
-          'updateStopwatch', {"data": json.encode(stopwatch.toJson())});
+          'updateStopwatchName', {"data": json.encode(gr.toJson())});
     }
   }
 }

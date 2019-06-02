@@ -1,6 +1,6 @@
 class GenericRequest2 {
   int id;
-  String arg1;
+  var arg1;
 
   GenericRequest2(this.id, this.arg1);
 

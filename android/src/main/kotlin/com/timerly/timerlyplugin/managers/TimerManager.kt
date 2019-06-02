@@ -50,9 +50,7 @@ object TimerManager {
         if (timers.containsKey(id)) {
             Log.d("TimerManager", "START TIMER: Starting Timer with Id: $id")
             val timer = timers.get(id)
-
             val request = CreateForegroundServiceRequest(timer!!.id, 0, timer!!.name, "Timer Started", timer!!.name, "Timer Started", false, NotificationCompat.PRIORITY_MAX, true, "Timer Notifications", "245698", listOf(NotificationActionButton(timer!!.id, "Lap", "LAP"), NotificationActionButton(timer!!.id, "Stop", "STOP")), 4)
-
             val intent = Intent(activity, TimerlyForegroundService::class.java)
             intent.putExtra("data", Utils.gson.toJson(request))
             intent.action = TimerlyForegroundService.ACTION_ADD_NOTIFICATION
@@ -121,7 +119,7 @@ object TimerManager {
      * resets the current timer
      */
     fun resetTimer(id: Int, activity: FlutterActivity): Timer? {
-        Log.d("TimerManager", "RESET TIMER: Timer with Id: " + id)
+        Log.d("TimerManager", "RESET TIMER: Timer with Id: $id")
         if (timers.containsKey(id)) {
 //            stopTimer(id, activity)
             val timer = timers.get(id);
@@ -137,7 +135,7 @@ object TimerManager {
      * @param timer: The timer Object Instance
      */
     fun updateTimerName(id: Int, name: String) {
-        Log.d("TimerManager", "UPDATE TIMER NAME: Looking for Timer with name: $name Id: $id")
+        Log.d("TimerManager", "UPDATE TIMER NAME: Looking for Timer with Id: $id")
         if (timers.containsKey(id)) {
             timers.get(id)!!.name = name
         }
