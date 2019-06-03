@@ -142,8 +142,8 @@ class TimerlyPlugin {
 
   static updateStopwatchInitialTimer(GenericRequest2 gr) async {
     if (Platform.isAndroid) {
-      await _channel
-          .invokeMethod('updateInitialTimeStopwatch', {"data": json.encode(gr.toJson())});
+      await _channel.invokeMethod(
+          'updateInitialTimeStopwatch', {"data": json.encode(gr.toJson())});
     }
   }
 
@@ -151,6 +151,13 @@ class TimerlyPlugin {
     if (Platform.isAndroid) {
       await _channel.invokeMethod(
           'updateStopwatchName', {"data": json.encode(gr.toJson())});
+    }
+  }
+
+  static playAlarm(GenericRequest2 gr) async {
+    if (Platform.isAndroid) {
+      await _channel
+          .invokeMethod('playAlarm', {'data': json.encode(gr.toJson())});
     }
   }
 }

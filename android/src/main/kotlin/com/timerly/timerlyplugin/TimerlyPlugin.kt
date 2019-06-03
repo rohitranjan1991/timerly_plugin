@@ -1,5 +1,6 @@
 package com.timerly.timerlyplugin
 
+import android.media.MediaPlayer
 import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
@@ -8,6 +9,7 @@ import com.google.gson.JsonObject
 import com.timerly.timerlyplugin.managers.StopwatchManager
 import com.timerly.timerlyplugin.managers.TimerManager
 import com.timerly.timerlyplugin.models.*
+import com.timerly.timerlyplugin.services.MediaService
 import io.flutter.app.FlutterActivity
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
@@ -106,6 +108,14 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
             StopwatchManager.updateInitialTimeStopwatch(gr.id, (gr.arg1 as Double).toLong())
+        }
+
+        // misc command
+        else if (call.method.equals("playAlarm")) {
+            val data = call.argument<String>("data")
+            val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
+            MediaService.stopAlarm(1)
+            MediaService.playAlarm(1, (gr.arg1 as Double).toInt(), activity)
         } else {
             result.notImplemented()
         }

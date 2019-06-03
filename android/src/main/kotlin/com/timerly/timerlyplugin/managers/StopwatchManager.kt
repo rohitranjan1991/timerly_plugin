@@ -12,6 +12,10 @@ import com.timerly.timerlyplugin.services.ITimerTickCallback
 import com.timerly.timerlyplugin.services.TimerService
 import io.flutter.app.FlutterActivity
 import io.flutter.plugin.common.EventChannel
+import android.R.attr.start
+import android.media.MediaPlayer
+import com.timerly.timerlyplugin.R
+
 
 object StopwatchManager {
 
@@ -62,7 +66,7 @@ object StopwatchManager {
             TimerService.addTimerCallback(stopwatch!!.id, object : ITimerTickCallback {
                 override fun onTimerTick() {
                     stopwatch.currentTime -= 1
-                    if (stopwatch.currentTime > 0) {
+                    if (stopwatch.currentTime > -1) {
                         Log.d("StopWatchManager", "TIMER UPDATE: Updated Timer Value with Id: " + stopwatch.id + " with current time : " + stopwatch.currentTime)
                         val request1 = CreateForegroundServiceRequest(stopwatch!!.id, 1, stopwatch!!.name, formatSeconds(stopwatch.currentTime), stopwatch!!.name, formatSeconds(stopwatch.currentTime), false, NotificationCompat.PRIORITY_LOW, true, "StopWatch Notifications", "245699", listOf(NotificationActionButton(stopwatch!!.id, "Stop", "STOP")), 2)
                         val intent1 = Intent(activity, TimerlyForegroundService::class.java)
@@ -73,7 +77,20 @@ object StopwatchManager {
                         stopwatch.isPlaying = true;
                     } else {
                         stopStopwatch(id, activity)
-
+                        var resID = R.raw.alrm1
+                        when (stopwatch.alarmId) {
+                            1 -> {
+                                resID = R.raw.alrm1
+                            }
+                            2 -> {
+                                resID = R.raw.alrm2
+                            }
+                            3 -> {
+                                resID = R.raw.alrm3
+                            }
+                        }
+                        val mediaPlayer = MediaPlayer.create(activity, resID)
+                        mediaPlayer.start()
                     }
                 }
             })
