@@ -109,8 +109,18 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
             StopwatchManager.updateInitialTimeStopwatch(gr.id, (gr.arg1 as Double).toLong())
         }
+        else if (call.method.equals("updateStopwatchAlarm")) {
+            val data = call.argument<String>("data")
+            val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
+            StopwatchManager.updateInitialTimeStopwatch(gr.id, (gr.arg1 as Double).toLong())
+        }
 
         // misc command
+        else if (call.method.equals("stopAlarm")) {
+            val data = call.argument<String>("data")
+            val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
+            MediaService.stopAlarm(1)
+        }
         else if (call.method.equals("playAlarm")) {
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)

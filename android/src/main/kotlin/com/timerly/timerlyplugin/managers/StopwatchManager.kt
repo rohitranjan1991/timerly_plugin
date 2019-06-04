@@ -12,9 +12,7 @@ import com.timerly.timerlyplugin.services.ITimerTickCallback
 import com.timerly.timerlyplugin.services.TimerService
 import io.flutter.app.FlutterActivity
 import io.flutter.plugin.common.EventChannel
-import android.R.attr.start
-import android.media.MediaPlayer
-import com.timerly.timerlyplugin.R
+import com.timerly.timerlyplugin.services.MediaService
 
 
 object StopwatchManager {
@@ -77,20 +75,8 @@ object StopwatchManager {
                         stopwatch.isPlaying = true;
                     } else {
                         stopStopwatch(id, activity)
-                        var resID = R.raw.alrm1
-                        when (stopwatch.alarmId) {
-                            1 -> {
-                                resID = R.raw.alrm1
-                            }
-                            2 -> {
-                                resID = R.raw.alrm2
-                            }
-                            3 -> {
-                                resID = R.raw.alrm3
-                            }
-                        }
-                        val mediaPlayer = MediaPlayer.create(activity, resID)
-                        mediaPlayer.start()
+                        Log.d("StopwatchManager", Utils.gson.toJson(stopwatch))
+                        MediaService.playAlarm(stopwatch.id, stopwatch.alarmValue!!, activity)
                     }
                 }
             })
@@ -159,7 +145,18 @@ object StopwatchManager {
     fun updateInitialTimeStopwatch(id: Int, value: Long) {
         Log.d("StopWatchManager", "UPDATE Stopwatch: Looking for Stopwatch with Id: $id")
         if (stopwatches.containsKey(id)) {
-            stopwatches.get(id)?.initialTime = value
+            stopwatches.get(id)!!.initialTime = value
+            stopwatches.get(id)!!.currentTime = value
+        }
+    }
+
+    /**
+     * updates the alarm id of the stopwatch
+     */
+    fun updateStopwatchAlarm(id: Int, value: Int) {
+        Log.d("StopWatchManager", "UPDATE Stopwatch Alarm: Looking for Stopwatch with Id: $id")
+        if (stopwatches.containsKey(id)) {
+            stopwatches.get(id)!!.alarmValue = value
         }
     }
 

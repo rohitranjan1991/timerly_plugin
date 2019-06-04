@@ -3,22 +3,24 @@ class StopwatchData {
   String name;
   int initialTime;
   int currentTime;
+  int alarmValue;
 
-
-  StopwatchData(this.id, this.name, this.initialTime, this.currentTime);
+  StopwatchData(
+      this.id, this.name, this.initialTime, this.currentTime, this.alarmValue);
 
   StopwatchData.fromJson(Map<String, dynamic> json)
       : id = json["id"],
         name = json["name"],
         initialTime = json["initialTime"],
-        currentTime = json["currentTime"];
+        currentTime = json["currentTime"],
+        alarmValue = json["alarmValue"];
 
-  Map<String, dynamic> toJson() =>
-      {
+  Map<String, dynamic> toJson() => {
         "id": id,
         "name": name,
         "currentTime": currentTime,
-        "initialTime": initialTime
+        "initialTime": initialTime,
+        "alarmValue": alarmValue,
       };
 }
 

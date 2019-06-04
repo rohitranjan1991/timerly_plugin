@@ -3,11 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:timerly_plugin/models/CreateForegroundServiceRequest.dart';
 
 import 'models/GenericRequest1.dart';
 import 'models/GenericRequest2.dart';
-import 'models/RemoveNotificationRequet.dart';
 import 'models/StopwatchData.dart';
 import 'models/TimerData.dart';
 
@@ -158,6 +156,20 @@ class TimerlyPlugin {
     if (Platform.isAndroid) {
       await _channel
           .invokeMethod('playAlarm', {'data': json.encode(gr.toJson())});
+    }
+  }
+
+  static stopAlarm(GenericRequest2 gr) async {
+    if (Platform.isAndroid) {
+      await _channel
+          .invokeMethod('playAlarm', {'data': json.encode(gr.toJson())});
+    }
+  }
+
+  static updateStopwatchAlarm(GenericRequest2 gr) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'updateStopwatchAlarm', {'data': json.encode(gr.toJson())});
     }
   }
 }
