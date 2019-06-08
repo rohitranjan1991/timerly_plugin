@@ -1,23 +1,27 @@
-import 'TimerLap.dart';
-
 class TimerData {
   int id;
   String name;
+  int initialTime;
   int currentTime;
-  List<TimerLap> laps;
+  int alarmValue;
 
-  TimerData(this.id, this.name, this.currentTime, this.laps);
+  TimerData(
+      this.id, this.name, this.initialTime, this.currentTime, this.alarmValue);
 
   TimerData.fromJson(Map<String, dynamic> json)
       : id = json["id"],
         name = json["name"],
+        initialTime = json["initialTime"],
         currentTime = json["currentTime"],
-        laps = json["laps"].map((i) => TimerLap.fromJson(i)).toList();
+        alarmValue = json["alarmValue"];
 
   Map<String, dynamic> toJson() => {
         "id": id,
         "name": name,
         "currentTime": currentTime,
-        "laps": laps.map((f) => f.toJson()).toList()
+        "initialTime": initialTime,
+        "alarmValue": alarmValue,
       };
 }
+
+//data class Stopwatch(val id: Int, val initialTime: Long, var currentTime: Long, val name: String)

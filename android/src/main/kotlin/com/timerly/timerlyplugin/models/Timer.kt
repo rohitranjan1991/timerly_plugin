@@ -1,5 +1,3 @@
 package com.timerly.timerlyplugin.models
 
-
-data class Lap(val count: Int, val atTime: Long)
-data class Timer(val id: Int, var name: String, var currentTime: Long, var isPlaying: Boolean, val laps: MutableList<Lap>? = mutableListOf())
+data class Timer(val id: Int, var initialTime: Long, var currentTime: Long, var name: String, var isPlaying: Boolean, var alarmValue: Int? = 1)

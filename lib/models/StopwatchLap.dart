@@ -1,10 +1,10 @@
-class TimerLap {
+class StopwatchLap {
   int count;
   int atTime;
 
-  TimerLap(this.count, this.atTime);
+  StopwatchLap(this.count, this.atTime);
 
-  TimerLap.fromJson(Map<String, dynamic> json)
+  StopwatchLap.fromJson(Map<String, dynamic> json)
       : count = json["count"],
         atTime = json["atTime"];
 

@@ -53,67 +53,19 @@ class TimerlyPlugin {
     }
   }
 
-  static addTimer(TimerData timer) async {
+  /// Stopwatch Commands
+
+  static addStopwatch(StopwatchData timer) async {
     if (Platform.isAndroid) {
       await _channel
-          .invokeMethod('addTimer', {"data": json.encode(timer.toJson())});
-    }
-  }
-
-  static startTimer(int id) async {
-    if (Platform.isAndroid) {
-      await _channel.invokeMethod(
-          'startTimer', {"data": json.encode(GenericRequest1(id).toJson())});
-    }
-  }
-
-  static stopTimer(int id) async {
-    if (Platform.isAndroid) {
-      await _channel.invokeMethod(
-          'stopTimer', {"data": json.encode(GenericRequest1(id).toJson())});
-    }
-  }
-
-  static removeTimer(int id) async {
-    if (Platform.isAndroid) {
-      await _channel.invokeMethod(
-          'removeTimer', {"data": json.encode(GenericRequest1(id).toJson())});
-    }
-  }
-
-  static lapTimer(int id) async {
-    if (Platform.isAndroid) {
-      await _channel.invokeMethod(
-          'lapTimer', {"data": json.encode(GenericRequest1(id).toJson())});
-    }
-  }
-
-  static resetTimer(int id) async {
-    if (Platform.isAndroid) {
-      await _channel.invokeMethod(
-          'resetTimer', {"data": json.encode(GenericRequest1(id).toJson())});
-    }
-  }
-
-  static updateTimerName(GenericRequest2 gr) async {
-    if (Platform.isAndroid) {
-      await _channel
-          .invokeMethod('updateTimerName', {"data": json.encode(gr.toJson())});
-    }
-  }
-
-  // Stopwatch Commands
-  static addStopwatch(StopwatchData stopwatch) async {
-    if (Platform.isAndroid) {
-      await _channel.invokeMethod(
-          'addStopwatch', {"data": json.encode(stopwatch.toJson())});
+          .invokeMethod('addStopwatch', {"data": json.encode(timer.toJson())});
     }
   }
 
   static startStopwatch(int id) async {
     if (Platform.isAndroid) {
-      await _channel.invokeMethod('startStopwatch',
-          {"data": json.encode(GenericRequest1(id).toJson())});
+      await _channel.invokeMethod(
+          'startStopwatch', {"data": json.encode(GenericRequest1(id).toJson())});
     }
   }
 
@@ -126,29 +78,79 @@ class TimerlyPlugin {
 
   static removeStopwatch(int id) async {
     if (Platform.isAndroid) {
-      await _channel.invokeMethod('removeStopwatch',
-          {"data": json.encode(GenericRequest1(id).toJson())});
+      await _channel.invokeMethod(
+          'removeStopwatch', {"data": json.encode(GenericRequest1(id).toJson())});
+    }
+  }
+
+  static lapStopwatch(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'lapStopwatch', {"data": json.encode(GenericRequest1(id).toJson())});
     }
   }
 
   static resetStopwatch(int id) async {
     if (Platform.isAndroid) {
-      await _channel.invokeMethod('resetStopwatch',
-          {"data": json.encode(GenericRequest1(id).toJson())});
-    }
-  }
-
-  static updateStopwatchInitialTimer(GenericRequest2 gr) async {
-    if (Platform.isAndroid) {
       await _channel.invokeMethod(
-          'updateInitialTimeStopwatch', {"data": json.encode(gr.toJson())});
+          'resetStopwatch', {"data": json.encode(GenericRequest1(id).toJson())});
     }
   }
 
   static updateStopwatchName(GenericRequest2 gr) async {
     if (Platform.isAndroid) {
+      await _channel
+          .invokeMethod('updateStopwatchName', {"data": json.encode(gr.toJson())});
+    }
+  }
+
+  // Timer Commands
+  static addTimer(TimerData stopwatch) async {
+    if (Platform.isAndroid) {
       await _channel.invokeMethod(
-          'updateStopwatchName', {"data": json.encode(gr.toJson())});
+          'addTimer', {"data": json.encode(stopwatch.toJson())});
+    }
+  }
+
+  static startTimer(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod('startTimer',
+          {"data": json.encode(GenericRequest1(id).toJson())});
+    }
+  }
+
+  static stopTimer(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'stopTimer', {"data": json.encode(GenericRequest1(id).toJson())});
+    }
+  }
+
+  static removeTimer(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod('removeTimer',
+          {"data": json.encode(GenericRequest1(id).toJson())});
+    }
+  }
+
+  static resetTimer(int id) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod('resetTimer',
+          {"data": json.encode(GenericRequest1(id).toJson())});
+    }
+  }
+
+  static updateTimerInitialTimer(GenericRequest2 gr) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'updateInitialTimeTimer', {"data": json.encode(gr.toJson())});
+    }
+  }
+
+  static updateTimerName(GenericRequest2 gr) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'updateTimerName', {"data": json.encode(gr.toJson())});
     }
   }
 
@@ -162,14 +164,14 @@ class TimerlyPlugin {
   static stopAlarm(GenericRequest2 gr) async {
     if (Platform.isAndroid) {
       await _channel
-          .invokeMethod('playAlarm', {'data': json.encode(gr.toJson())});
+          .invokeMethod('stopAlarm', {'data': json.encode(gr.toJson())});
     }
   }
 
-  static updateStopwatchAlarm(GenericRequest2 gr) async {
+  static updateTimerAlarm(GenericRequest2 gr) async {
     if (Platform.isAndroid) {
       await _channel.invokeMethod(
-          'updateStopwatchAlarm', {'data': json.encode(gr.toJson())});
+          'updateTimerAlarm', {'data': json.encode(gr.toJson())});
     }
   }
 }

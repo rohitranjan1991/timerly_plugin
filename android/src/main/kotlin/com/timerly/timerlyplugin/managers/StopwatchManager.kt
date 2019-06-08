@@ -12,14 +12,13 @@ import com.timerly.timerlyplugin.services.ITimerTickCallback
 import com.timerly.timerlyplugin.services.TimerService
 import io.flutter.app.FlutterActivity
 import io.flutter.plugin.common.EventChannel
-import com.timerly.timerlyplugin.services.MediaService
-
 
 object StopwatchManager {
 
     private val stopwatches: MutableMap<Int, Stopwatch> = mutableMapOf()
     private var eventSink: EventChannel.EventSink? = null
-    private val widgetType: Int = 1
+    private val widgetType: Int = 0
+
 
     fun setEventSink(es: EventChannel.EventSink?) {
         eventSink = es
@@ -30,64 +29,54 @@ object StopwatchManager {
     }
 
     /**
-     * adds a new StopWatch
+     * adds a new Timer
      */
-    fun addNewStopwatch(stopWatch: Stopwatch?) {
-        if (stopWatch == null) {
-            Log.d("StopWatchManager", "Add Stopwatch Failed. Stopwatch Object null")
+    fun addNewStopwatch(stopwatch: Stopwatch?) {
+        if (stopwatch == null) {
+            Log.d("StopwatchManager", "Add Timer Failed. Timer Object null")
             return
         }
-        Log.d("StopWatchManager", "Stopwatch Added with Id: " + stopWatch.id)
-        if (!stopwatches.containsKey(stopWatch.id))
-            stopwatches.put(stopWatch.id, stopWatch)
+        Log.d("StopwatchManager", "Stopwatch Added with Id: " + stopwatch.id)
+        if (!stopwatches.containsKey(stopwatch.id))
+            stopwatches.put(stopwatch.id, stopwatch)
+
     }
 
     /**
-     * starts the stopwatch with the id
+     * starts the Stopwatch with the passed in Id
      */
     fun startStopwatch(id: Int, activity: FlutterActivity) {
-        Log.d("StopWatchManager", "START Stopwatch: Looking for StopWatch with Id: $id")
+        Log.d("StopwatchManager", "START Stopwatch: Looking for Timer with Id: $id")
         if (stopwatches.containsKey(id)) {
-            Log.d("StopWatchManager", "START StopWatch: Starting StopWatch with Id: $id")
+            Log.d("StopwatchManager", "START Stopwatch: Starting Timer with Id: $id")
             val stopwatch = stopwatches.get(id)
-            if (stopwatch!!.initialTime == 0L) {
-                Log.d("StopWatchManager", "START StopWatch: StopWatch not started due to time not set with Id: $id")
-                return
-            }
-            val request = CreateForegroundServiceRequest(stopwatch!!.id, 1, stopwatch!!.name, "Timer Started", stopwatch!!.name, "Stopwatch Started", false, NotificationCompat.PRIORITY_MAX, true, "StopWatch Notifications", "245699", listOf(NotificationActionButton(stopwatch!!.id, "Stop", "STOP")), 4)
-
+            val request = CreateForegroundServiceRequest(stopwatch!!.id, 0, stopwatch!!.name, "Stopwatch Started", stopwatch!!.name, "Stopwatch Started", false, NotificationCompat.PRIORITY_MAX, true, "Stopwatch Notifications", "245698", listOf(NotificationActionButton(stopwatch!!.id, "Lap", "LAP"), NotificationActionButton(stopwatch!!.id, "Stop", "STOP")), 4)
             val intent = Intent(activity, TimerlyForegroundService::class.java)
             intent.putExtra("data", Utils.gson.toJson(request))
             intent.action = TimerlyForegroundService.ACTION_ADD_NOTIFICATION
             activity.startService(intent)
-            stopwatch.currentTime = stopwatch.initialTime
+
             TimerService.addTimerCallback(stopwatch!!.id, object : ITimerTickCallback {
                 override fun onTimerTick() {
-                    stopwatch.currentTime -= 1
-                    if (stopwatch.currentTime > -1) {
-                        Log.d("StopWatchManager", "TIMER UPDATE: Updated Timer Value with Id: " + stopwatch.id + " with current time : " + stopwatch.currentTime)
-                        val request1 = CreateForegroundServiceRequest(stopwatch!!.id, 1, stopwatch!!.name, formatSeconds(stopwatch.currentTime), stopwatch!!.name, formatSeconds(stopwatch.currentTime), false, NotificationCompat.PRIORITY_LOW, true, "StopWatch Notifications", "245699", listOf(NotificationActionButton(stopwatch!!.id, "Stop", "STOP")), 2)
-                        val intent1 = Intent(activity, TimerlyForegroundService::class.java)
-                        intent1.putExtra("data", Utils.gson.toJson(request1))
-                        intent1.action = TimerlyForegroundService.ACTION_UPDATE_NOTIFICATION
-                        activity.startService(intent1)
-                        eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(stopwatch.id, widgetType, "UPDATE_STOPWATCH_VALUE", Utils.gson.toJson(stopwatch))))
-                        stopwatch.isPlaying = true;
-                    } else {
-                        stopStopwatch(id, activity)
-                        Log.d("StopwatchManager", Utils.gson.toJson(stopwatch))
-                        MediaService.playAlarm(stopwatch.id, stopwatch.alarmValue!!, activity)
-                    }
+                    stopwatch.currentTime += 1
+                    Log.d("StopwatchManager", "Stopwatch UPDATE: Updated Timer Value with Id: " + stopwatch.id + " with current time : " + stopwatch.currentTime)
+                    val request1 = CreateForegroundServiceRequest(stopwatch!!.id, 0, stopwatch!!.name, formatSeconds(stopwatch.currentTime), stopwatch!!.name, formatSeconds(stopwatch.currentTime), false, NotificationCompat.PRIORITY_LOW, true, "Stopwatch Notifications", "245698", listOf(NotificationActionButton(stopwatch!!.id, "Lap", "LAP"), NotificationActionButton(stopwatch!!.id, "Stop", "STOP")), 2)
+                    val intent1 = Intent(activity, TimerlyForegroundService::class.java)
+                    intent1.putExtra("data", Utils.gson.toJson(request1))
+                    intent1.action = TimerlyForegroundService.ACTION_UPDATE_NOTIFICATION
+                    activity.startService(intent1)
+                    stopwatch.isPlaying = true
+                    eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(stopwatch.id, widgetType, "UPDATE_STOPWATCH_VALUE", Utils.gson.toJson(stopwatch))))
                 }
             })
         }
     }
 
     /**
-     * stops the stopwatch with the id
+     * stops the timer
      */
     fun stopStopwatch(id: Int, activity: FlutterActivity) {
-        Log.d("StopWatchManager", "STOP StopWatch: Stopping StopWatch with Id: $id")
+        Log.d("StopwatchManager", "STOP Stopwatch: Stopping Stopwatch with Id: $id")
         if (stopwatches.containsKey(id)) {
             val stopwatch = stopwatches.get(id);
             stopwatch!!.isPlaying = false
@@ -97,16 +86,16 @@ object StopwatchManager {
             intent.action = TimerlyForegroundService.ACTION_REMOVE_NOTIFICATION
             activity.startService(intent)
             eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(id, widgetType, "STOP_STOPWATCH_VALUE", Utils.gson.toJson(stopwatch))))
-            val notification = CreateForegroundServiceRequest(stopwatch!!.id + 6798123, 1, stopwatch!!.name, "Stopwatch Ended", stopwatch!!.name, "Stopwatch Ended", true, NotificationCompat.PRIORITY_MAX, false, "StopWatch Notifications", "245699", listOf(), 4)
+            val notification = CreateForegroundServiceRequest(stopwatch!!.id + 24037, 0, stopwatch!!.name, "Stopwatch Ended", stopwatch!!.name, "Stopwatch Ended", true, NotificationCompat.PRIORITY_MAX, false, "Stopwatch Notifications", "245698", listOf(), 4)
             createLocalNotification(activity, notification)
         }
     }
 
     /**
-     * removes the stopwatch with the id
+     * removes the Stopwatch with the passed in Id
      */
     fun removeStopwatch(id: Int) {
-        Log.d("StopWatchManager", "REMOVE StopWatch: Removing StopWatch with Id: $id")
+        Log.d("StopwatchManager", "REMOVE Stopwatch: Removing Stopwatch with Id: $id")
         if (stopwatches.containsKey(id)) {
             stopwatches.remove(id)
         }
@@ -116,47 +105,39 @@ object StopwatchManager {
     }
 
     /**
-     * resets the stopwatch with the id
+     * adds the lap to the current Stopwatch
+     */
+    fun lapStopwatch(id: Int) {
+        Log.d("StopwatchManager", "LAP STOPWATCH: Stopwatch with Id: $id")
+        if (stopwatches.containsKey(id)) {
+            val stopwatch = stopwatches.get(id)!!
+            stopwatch!!.laps!!.add(Lap(stopwatch!!.laps!!.size + 1, stopwatch.currentTime))
+        }
+    }
+
+    /**
+     * resets the current Stopwatch
      */
     fun resetStopwatch(id: Int, activity: FlutterActivity): Stopwatch? {
-        Log.d("StopWatchManager", "RESET StopWatch: StopWatch with Id: $id")
+        Log.d("StopwatchManager", "RESET Stopwatch: Stopwatch with Id: $id")
         if (stopwatches.containsKey(id)) {
-//            stopStopwatch(id, activity)
-            val stopWatch = stopwatches.get(id);
-            stopWatch!!.currentTime = stopWatch.initialTime
-            return stopWatch
+//            stopTimer(id, activity)
+            val stopwatch = stopwatches.get(id);
+            stopwatch!!.currentTime = 0
+            stopwatch.laps!!.clear()
+            eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(stopwatch.id, widgetType, "UPDATE_STOPWATCH_VALUE", Utils.gson.toJson(stopwatch))))
+            return stopwatch
         }
         return null
     }
 
     /**
-     * updates the stopwatch name
+     * updates the Stopwatch
      */
     fun updateStopwatchName(id: Int, name: String) {
-        Log.d("StopWatchManager", "UPDATE Stopwatch: Looking for Stopwatch with Id: $id")
+        Log.d("StopwatchManager", "UPDATE Stopwatch NAME: Looking for Stopwatch with Id: $id")
         if (stopwatches.containsKey(id)) {
-            stopwatches.get(id)?.name = name
-        }
-    }
-
-    /**
-     * updates the initial value of the timer
-     */
-    fun updateInitialTimeStopwatch(id: Int, value: Long) {
-        Log.d("StopWatchManager", "UPDATE Stopwatch: Looking for Stopwatch with Id: $id")
-        if (stopwatches.containsKey(id)) {
-            stopwatches.get(id)!!.initialTime = value
-            stopwatches.get(id)!!.currentTime = value
-        }
-    }
-
-    /**
-     * updates the alarm id of the stopwatch
-     */
-    fun updateStopwatchAlarm(id: Int, value: Int) {
-        Log.d("StopWatchManager", "UPDATE Stopwatch Alarm: Looking for Stopwatch with Id: $id")
-        if (stopwatches.containsKey(id)) {
-            stopwatches.get(id)!!.alarmValue = value
+            stopwatches.get(id)!!.name = name
         }
     }
 
@@ -170,6 +151,12 @@ object StopwatchManager {
                 "STOP" -> {
                     stopStopwatch(timerlyTimerEvent.id, activity)
                 }
+                "LAP" -> {
+                    lapStopwatch(timerlyTimerEvent.id)
+                }
+                "REMOVE" -> {
+                    removeStopwatch(timerlyTimerEvent.id)
+                }
             }
             eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timerlyTimerEvent.id, widgetType, timerlyTimerEvent.command, Utils.gson.toJson(stopwatch))))
         }
@@ -178,7 +165,7 @@ object StopwatchManager {
     /**
      * returns all the stopwatches
      */
-    fun getAllStopwatchesData(): List<Stopwatch> {
+    fun getAllStopwatchData(): List<Stopwatch> {
         return stopwatches.values.toList()
     }
 }

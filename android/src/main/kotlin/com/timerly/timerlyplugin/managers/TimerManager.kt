@@ -12,13 +12,14 @@ import com.timerly.timerlyplugin.services.ITimerTickCallback
 import com.timerly.timerlyplugin.services.TimerService
 import io.flutter.app.FlutterActivity
 import io.flutter.plugin.common.EventChannel
+import com.timerly.timerlyplugin.services.MediaService
+
 
 object TimerManager {
 
     private val timers: MutableMap<Int, Timer> = mutableMapOf()
     private var eventSink: EventChannel.EventSink? = null
-    private val widgetType: Int = 0
-
+    private val widgetType: Int = 1
 
     fun setEventSink(es: EventChannel.EventSink?) {
         eventSink = es
@@ -39,44 +40,54 @@ object TimerManager {
         Log.d("TimerManager", "Timer Added with Id: " + timer.id)
         if (!timers.containsKey(timer.id))
             timers.put(timer.id, timer)
-
     }
 
     /**
-     * starts the timer with the passed in Id
+     * starts the Timer with the id
      */
     fun startTimer(id: Int, activity: FlutterActivity) {
-        Log.d("TimerManager", "START TIMER: Looking for Timer with Id: $id")
+        Log.d("TimerManager", "START Timer: Looking for Timer with Id: $id")
         if (timers.containsKey(id)) {
-            Log.d("TimerManager", "START TIMER: Starting Timer with Id: $id")
+            Log.d("TimerManager", "START Timer: Starting Timer with Id: $id")
             val timer = timers.get(id)
-            val request = CreateForegroundServiceRequest(timer!!.id, 0, timer!!.name, "Timer Started", timer!!.name, "Timer Started", false, NotificationCompat.PRIORITY_MAX, true, "Timer Notifications", "245698", listOf(NotificationActionButton(timer!!.id, "Lap", "LAP"), NotificationActionButton(timer!!.id, "Stop", "STOP")), 4)
+            if (timer!!.initialTime == 0L) {
+                Log.d("TimerManager", "START Timer: Timer not started due to time not set with Id: $id")
+                return
+            }
+            val request = CreateForegroundServiceRequest(timer!!.id, 1, timer!!.name, "Timer Started", timer!!.name, "Timer Started", false, NotificationCompat.PRIORITY_MAX, true, "Timer Notifications", "245699", listOf(NotificationActionButton(timer!!.id, "Stop", "STOP")), 4)
+
             val intent = Intent(activity, TimerlyForegroundService::class.java)
             intent.putExtra("data", Utils.gson.toJson(request))
             intent.action = TimerlyForegroundService.ACTION_ADD_NOTIFICATION
             activity.startService(intent)
-
+            timer.currentTime = timer.initialTime
             TimerService.addTimerCallback(timer!!.id, object : ITimerTickCallback {
                 override fun onTimerTick() {
-                    timer.currentTime += 1
-                    Log.d("TimerManager", "TIMER UPDATE: Updated Timer Value with Id: " + timer.id + " with current time : " + timer.currentTime)
-                    val request1 = CreateForegroundServiceRequest(timer!!.id, 0, timer!!.name, formatSeconds(timer.currentTime), timer!!.name, formatSeconds(timer.currentTime), false, NotificationCompat.PRIORITY_LOW, true, "Timer Notifications", "245698", listOf(NotificationActionButton(timer!!.id, "Lap", "LAP"), NotificationActionButton(timer!!.id, "Stop", "STOP")), 2)
-                    val intent1 = Intent(activity, TimerlyForegroundService::class.java)
-                    intent1.putExtra("data", Utils.gson.toJson(request1))
-                    intent1.action = TimerlyForegroundService.ACTION_UPDATE_NOTIFICATION
-                    activity.startService(intent1)
-                    timer.isPlaying = true
-                    eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, widgetType, "UPDATE_TIMER_VALUE", Utils.gson.toJson(timer))))
+                    timer.currentTime -= 1
+                    if (timer.currentTime > -1) {
+                        Log.d("TimerManager", "TIMER UPDATE: Updated Timer Value with Id: " + timer.id + " with current time : " + timer.currentTime)
+                        val request1 = CreateForegroundServiceRequest(timer!!.id, 1, timer!!.name, formatSeconds(timer.currentTime), timer!!.name, formatSeconds(timer.currentTime), false, NotificationCompat.PRIORITY_LOW, true, "Timer Notifications", "245699", listOf(NotificationActionButton(timer!!.id, "Stop", "STOP")), 2)
+                        val intent1 = Intent(activity, TimerlyForegroundService::class.java)
+                        intent1.putExtra("data", Utils.gson.toJson(request1))
+                        intent1.action = TimerlyForegroundService.ACTION_UPDATE_NOTIFICATION
+                        activity.startService(intent1)
+                        eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, widgetType, "UPDATE_TIMER_VALUE", Utils.gson.toJson(timer))))
+                        timer.isPlaying = true;
+                    } else {
+                        stopTimer(id, activity)
+                        Log.d("TimerManager", Utils.gson.toJson(timer))
+                        MediaService.playAlarm(timer.id, timer.alarmValue!!, activity)
+                    }
                 }
             })
         }
     }
 
     /**
-     * stops the timer
+     * stops the Timer with the id
      */
     fun stopTimer(id: Int, activity: FlutterActivity) {
-        Log.d("TimerManager", "STOP TIMER: Stopping Timer with Id: $id")
+        Log.d("TimerManager", "STOP Timer: Stopping Timer with Id: $id")
         if (timers.containsKey(id)) {
             val timer = timers.get(id);
             timer!!.isPlaying = false
@@ -86,16 +97,16 @@ object TimerManager {
             intent.action = TimerlyForegroundService.ACTION_REMOVE_NOTIFICATION
             activity.startService(intent)
             eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(id, widgetType, "STOP_TIMER_VALUE", Utils.gson.toJson(timer))))
-            val notification = CreateForegroundServiceRequest(timer!!.id + 24037, 0, timer!!.name, "Timer Ended", timer!!.name, "Timer Ended", true, NotificationCompat.PRIORITY_MAX, false, "Timer Notifications", "245698", listOf(), 4)
+            val notification = CreateForegroundServiceRequest(timer!!.id + 6798123, 1, timer!!.name, "Timer Ended", timer!!.name, "Timer Ended", true, NotificationCompat.PRIORITY_MAX, false, "Timer Notifications", "245699", listOf(), 4)
             createLocalNotification(activity, notification)
         }
     }
 
     /**
-     * removes the Timer with the passed in Id
+     * removes the Timer with the id
      */
     fun removeTimer(id: Int) {
-        Log.d("TimerManager", "REMOVE TIMER: Removing Timer with Id: $id")
+        Log.d("TimerManager", "REMOVE Timer: Removing Timer with Id: $id")
         if (timers.containsKey(id)) {
             timers.remove(id)
         }
@@ -105,43 +116,48 @@ object TimerManager {
     }
 
     /**
-     * adds the lap to the current Timer
-     */
-    fun lapTimer(id: Int) {
-        Log.d("TimerManager", "LAP TIMER: Timer with Id: $id")
-        if (timers.containsKey(id)) {
-            val timer = timers.get(id)!!
-            timer!!.laps!!.add(Lap(timer!!.laps!!.size + 1, timer.currentTime))
-        }
-    }
-
-    /**
-     * resets the current timer
+     * resets the Timer with the id
      */
     fun resetTimer(id: Int, activity: FlutterActivity): Timer? {
-        Log.d("TimerManager", "RESET TIMER: Timer with Id: $id")
+        Log.d("TimerManager", "RESET Timer: Timer with Id: $id")
         if (timers.containsKey(id)) {
-//            stopTimer(id, activity)
             val timer = timers.get(id);
-            timer!!.currentTime = 0
-            timer.laps!!.clear()
+            timer!!.currentTime = timer.initialTime
             return timer
         }
         return null
     }
 
     /**
-     * updates the timer
-     * @param timer: The timer Object Instance
+     * updates the Timer name
      */
     fun updateTimerName(id: Int, name: String) {
-        Log.d("TimerManager", "UPDATE TIMER NAME: Looking for Timer with Id: $id")
+        Log.d("TimerManager", "UPDATE Timer: Looking for Timer with Id: $id")
         if (timers.containsKey(id)) {
-            timers.get(id)!!.name = name
+            timers.get(id)?.name = name
         }
     }
 
-//    fun getAllTimers
+    /**
+     * updates the initial value of the timer
+     */
+    fun updateInitialTimeTimer(id: Int, value: Long) {
+        Log.d("TimerManager", "UPDATE Timer: Looking for Timer with Id: $id")
+        if (timers.containsKey(id)) {
+            timers.get(id)!!.initialTime = value
+            timers.get(id)!!.currentTime = value
+        }
+    }
+
+    /**
+     * updates the alarm id of the Timer
+     */
+    fun updateTimerAlarm(id: Int, value: Int) {
+        Log.d("TimerManager", "UPDATE Timer Alarm: Looking for Timer with Id: $id")
+        if (timers.containsKey(id)) {
+            timers.get(id)!!.alarmValue = value
+        }
+    }
 
     /**
      * processes Notification Button Callback
@@ -153,12 +169,6 @@ object TimerManager {
                 "STOP" -> {
                     stopTimer(timerlyTimerEvent.id, activity)
                 }
-                "LAP" -> {
-                    lapTimer(timerlyTimerEvent.id)
-                }
-                "REMOVE" -> {
-                    removeTimer(timerlyTimerEvent.id)
-                }
             }
             eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timerlyTimerEvent.id, widgetType, timerlyTimerEvent.command, Utils.gson.toJson(timer))))
         }
@@ -167,7 +177,7 @@ object TimerManager {
     /**
      * returns all the timers
      */
-    fun getAllTimerData(): List<Timer> {
+    fun getAllTimersData(): List<Timer> {
         return timers.values.toList()
     }
 }

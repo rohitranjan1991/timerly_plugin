@@ -1,13 +1,12 @@
 package com.timerly.timerlyplugin
 
-import android.media.MediaPlayer
 import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.timerly.timerlyplugin.managers.StopwatchManager
 import com.timerly.timerlyplugin.managers.TimerManager
+import com.timerly.timerlyplugin.managers.StopwatchManager
 import com.timerly.timerlyplugin.models.*
 import com.timerly.timerlyplugin.services.MediaService
 import io.flutter.app.FlutterActivity
@@ -40,79 +39,79 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val response = JsonObject();
             val allTimers = JsonArray();
             val allStopwatches = JsonArray();
-            TimerManager.getAllTimerData().forEach { allTimers.add(Utils.gson.toJson(it)) }
-            StopwatchManager.getAllStopwatchesData().forEach { allStopwatches.add(Utils.gson.toJson(it)) }
+            StopwatchManager.getAllStopwatchData().forEach { allTimers.add(Utils.gson.toJson(it)) }
+            TimerManager.getAllTimersData().forEach { allStopwatches.add(Utils.gson.toJson(it)) }
             response.add("timers", allTimers)
             response.add("stopwatches", allStopwatches)
             result.success(response.toString());
         }
-        // Timer Commands
-
-        else if (call.method.equals("addTimer")) {
-            val data = call.argument<String>("data")
-            val timer = Gson().fromJson<Timer>(data, Timer::class.java)
-            TimerManager.addNewTimer(timer)
-        } else if (call.method.equals("startTimer")) {
-            val data = call.argument<String>("data")
-            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            TimerManager.startTimer(timer.id, activity)
-        } else if (call.method.equals("stopTimer")) {
-            val data = call.argument<String>("data")
-            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            TimerManager.stopTimer(timer.id, activity)
-        } else if (call.method.equals("removeTimer")) {
-            val data = call.argument<String>("data")
-            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            TimerManager.removeTimer(timer.id)
-        } else if (call.method.equals("lapTimer")) {
-            val data = call.argument<String>("data")
-            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            TimerManager.lapTimer(timer.id)
-        } else if (call.method.equals("resetTimer")) {
-            val data = call.argument<String>("data")
-            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            TimerManager.resetTimer(timer.id, activity)
-        } else if (call.method.equals("updateTimerName")) {
-            val data = call.argument<String>("data")
-            val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
-            TimerManager.updateTimerName(gr.id, gr.arg1 as String)
-        }
-
         // Stopwatch Commands
 
         else if (call.method.equals("addStopwatch")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<Stopwatch>(data, Stopwatch::class.java)
-            StopwatchManager.addNewStopwatch(stopwatch)
+            val timer = Gson().fromJson<Stopwatch>(data, Stopwatch::class.java)
+            StopwatchManager.addNewStopwatch(timer)
         } else if (call.method.equals("startStopwatch")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            StopwatchManager.startStopwatch(stopwatch.id, activity)
+            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            StopwatchManager.startStopwatch(timer.id, activity)
         } else if (call.method.equals("stopStopwatch")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            StopwatchManager.stopStopwatch(stopwatch.id, activity)
+            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            StopwatchManager.stopStopwatch(timer.id, activity)
         } else if (call.method.equals("removeStopwatch")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            StopwatchManager.removeStopwatch(stopwatch.id)
+            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            StopwatchManager.removeStopwatch(timer.id)
+        } else if (call.method.equals("lapStopwatch")) {
+            val data = call.argument<String>("data")
+            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            StopwatchManager.lapStopwatch(timer.id)
         } else if (call.method.equals("resetStopwatch")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            StopwatchManager.resetStopwatch(stopwatch.id, activity)
+            val timer = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            StopwatchManager.resetStopwatch(timer.id, activity)
         } else if (call.method.equals("updateStopwatchName")) {
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
             StopwatchManager.updateStopwatchName(gr.id, gr.arg1 as String)
-        } else if (call.method.equals("updateInitialTimeStopwatch")) {
-            val data = call.argument<String>("data")
-            val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
-            StopwatchManager.updateInitialTimeStopwatch(gr.id, (gr.arg1 as Double).toLong())
         }
-        else if (call.method.equals("updateStopwatchAlarm")) {
+
+        // Timer Commands
+
+        else if (call.method.equals("addTimer")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<Timer>(data, Timer::class.java)
+            TimerManager.addNewTimer(stopwatch)
+        } else if (call.method.equals("startTimer")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.startTimer(stopwatch.id, activity)
+        } else if (call.method.equals("stopTimer")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.stopTimer(stopwatch.id, activity)
+        } else if (call.method.equals("removeTimer")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.removeTimer(stopwatch.id)
+        } else if (call.method.equals("resetTimer")) {
+            val data = call.argument<String>("data")
+            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.resetTimer(stopwatch.id, activity)
+        } else if (call.method.equals("updateTimerName")) {
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
-            StopwatchManager.updateInitialTimeStopwatch(gr.id, (gr.arg1 as Double).toLong())
+            TimerManager.updateTimerName(gr.id, gr.arg1 as String)
+        } else if (call.method.equals("updateInitialTimeTimer")) {
+            val data = call.argument<String>("data")
+            val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
+            TimerManager.updateInitialTimeTimer(gr.id, (gr.arg1 as Double).toLong())
+        }
+        else if (call.method.equals("updateTimerAlarm")) {
+            val data = call.argument<String>("data")
+            val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
+            TimerManager.updateInitialTimeTimer(gr.id, (gr.arg1 as Double).toLong())
         }
 
         // misc command
@@ -145,15 +144,15 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
     override fun onListen(p0: Any?, p1: EventChannel.EventSink?) {
         Log.w("TimerlyNotification", "onListen")
         eventSink = p1
-        TimerManager.setEventSink(p1)
         StopwatchManager.setEventSink(p1)
+        TimerManager.setEventSink(p1)
     }
 
     override fun onCancel(p0: Any?) {
         Log.w("TimerlyNotification", "cancelling listener")
         eventSink = null
-        TimerManager.unsetEventSink()
         StopwatchManager.unsetEventSink()
+        TimerManager.unsetEventSink()
 
     }
 
@@ -161,7 +160,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onNotificationEvent(timerlyTimerEvent: TimerlyTimerEvent) {
         Log.d("TimerlyNotification", "received EventBus Notification")
-        TimerManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
         StopwatchManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
+        TimerManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
     }
 }
