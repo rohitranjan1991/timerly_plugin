@@ -11,11 +11,13 @@ import com.google.gson.Gson
 import com.timerly.timerlyplugin.models.CreateForegroundServiceRequest
 import com.timerly.timerlyplugin.models.RemoveNotificationRequest
 import com.timerly.timerlyplugin.models.TimerlyTimerEvent
+import io.flutter.plugin.common.EventChannel
 import org.greenrobot.eventbus.EventBus
 
 
-class TimerlyForegroundService : Service() {
+class TimerlyForegroundService : Service(){
 
+    private var eventSink: EventChannel.EventSink? = null
     private val TAG_FOREGROUND_SERVICE = "TimerlyForegroundTag"
     private var mNotificationManager: NotificationManager? = null
     private var mBuilder: NotificationCompat.Builder? = null
@@ -29,7 +31,8 @@ class TimerlyForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
+//        if (!EventBus.getDefault().isRegistered(this))
+//            EventBus.getDefault().register(this)
         if (intent != null) {
             val action = intent.action
             when (action) {
@@ -160,6 +163,14 @@ class TimerlyForegroundService : Service() {
 
         // Stop the foreground service.
         stopSelf()
+    }
+
+     fun onListen(p0: Any?, p1: EventChannel.EventSink?) {
+        eventSink = p1!!
+    }
+
+     fun onCancel(p0: Any?) {
+        eventSink = null
     }
 
 

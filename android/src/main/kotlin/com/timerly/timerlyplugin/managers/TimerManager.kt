@@ -32,7 +32,7 @@ object TimerManager {
     /**
      * adds a new Timer
      */
-    fun addNewTimer(timer: Timer?) {
+    fun addNewTimer(timer: Timer?, activity: FlutterActivity) {
         if (timer == null) {
             Log.d("TimerManager", "Add Timer Failed. Timer Object null")
             return
@@ -40,6 +40,11 @@ object TimerManager {
         Log.d("TimerManager", "Timer Added with Id: " + timer.id)
         if (!timers.containsKey(timer.id))
             timers.put(timer.id, timer)
+
+        if (timers.size == 1) {
+            FloatingServiceManager.doBindService(activity)
+            FloatingServiceManager.addTimer(timer, activity)
+        }
     }
 
     /**
@@ -60,7 +65,8 @@ object TimerManager {
             intent.putExtra("data", Utils.gson.toJson(request))
             intent.action = TimerlyForegroundService.ACTION_ADD_NOTIFICATION
             activity.startService(intent)
-            timer.currentTime = timer.initialTime
+            if (timer.currentTime == 0L)
+                timer.currentTime = timer.initialTime
             TimerService.addTimerCallback(timer!!.id, object : ITimerTickCallback {
                 override fun onTimerTick() {
                     timer.currentTime -= 1
@@ -72,11 +78,12 @@ object TimerManager {
                         intent1.action = TimerlyForegroundService.ACTION_UPDATE_NOTIFICATION
                         activity.startService(intent1)
                         eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, widgetType, "UPDATE_TIMER_VALUE", Utils.gson.toJson(timer))))
-                        timer.isPlaying = true;
+                        timer.isPlaying = true
+                        FloatingServiceManager.updateTimer(timer)
                     } else {
                         stopTimer(id, activity)
                         Log.d("TimerManager", Utils.gson.toJson(timer))
-                        MediaService.playAlarm(timer.id, timer.alarmValue!!, activity)
+                        MediaService.playAlarm(timer.id, timer.alarmSoundValue!!, activity)
                     }
                 }
             })
@@ -100,18 +107,22 @@ object TimerManager {
             val notification = CreateForegroundServiceRequest(timer!!.id + 6798123, 1, timer!!.name, "Timer Ended", timer!!.name, "Timer Ended", true, NotificationCompat.PRIORITY_MAX, false, "Timer Notifications", "245699", listOf(), 4)
             createLocalNotification(activity, notification)
         }
+        if (timers.size == 0) {
+
+        }
     }
 
     /**
      * removes the Timer with the id
      */
-    fun removeTimer(id: Int) {
+    fun removeTimer(id: Int, activity: FlutterActivity) {
         Log.d("TimerManager", "REMOVE Timer: Removing Timer with Id: $id")
         if (timers.containsKey(id)) {
             timers.remove(id)
         }
         if (timers.isEmpty()) {
             TimerService.removeTimerCallback(id)
+            FloatingServiceManager.doUnbindService(activity)
         }
     }
 
@@ -135,6 +146,7 @@ object TimerManager {
         Log.d("TimerManager", "UPDATE Timer: Looking for Timer with Id: $id")
         if (timers.containsKey(id)) {
             timers.get(id)?.name = name
+            FloatingServiceManager.updateTimer(timers.get(id)!!)
         }
     }
 
@@ -155,7 +167,7 @@ object TimerManager {
     fun updateTimerAlarm(id: Int, value: Int) {
         Log.d("TimerManager", "UPDATE Timer Alarm: Looking for Timer with Id: $id")
         if (timers.containsKey(id)) {
-            timers.get(id)!!.alarmValue = value
+            timers.get(id)!!.alarmSoundValue = value
         }
     }
 

@@ -174,4 +174,18 @@ class TimerlyPlugin {
           'updateTimerAlarm', {'data': json.encode(gr.toJson())});
     }
   }
+
+  static testCmd1() async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'testCmd1');
+    }
+  }
+
+  static testCmd2() async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'testCmd2');
+    }
+  }
 }

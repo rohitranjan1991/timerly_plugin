@@ -1,13 +1,19 @@
 package com.timerly.timerlyplugin
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
+import android.view.View
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.timerly.timerlyplugin.managers.TimerManager
+import com.timerly.timerlyplugin.managers.FloatingServiceManager
 import com.timerly.timerlyplugin.managers.StopwatchManager
+import com.timerly.timerlyplugin.managers.TimerManager
 import com.timerly.timerlyplugin.models.*
+import com.timerly.timerlyplugin.services.FloatingWidgetService
 import com.timerly.timerlyplugin.services.MediaService
 import io.flutter.app.FlutterActivity
 import io.flutter.plugin.common.EventChannel
@@ -26,6 +32,8 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
     private var eventSink: EventChannel.EventSink? = null
     private var isForegroundServiceActive = false;
     private var notificationIds: MutableList<Int> = mutableListOf()
+    /*  Permission request code to draw over other apps  */
+    private val DRAW_OVER_OTHER_APP_PERMISSION_REQUEST_CODE = 1222
 
     override fun onMethodCall(call: MethodCall, result: Result): Unit {
         if (!EventBus.getDefault().isRegistered(this))
@@ -82,7 +90,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
         else if (call.method.equals("addTimer")) {
             val data = call.argument<String>("data")
             val stopwatch = Gson().fromJson<Timer>(data, Timer::class.java)
-            TimerManager.addNewTimer(stopwatch)
+            TimerManager.addNewTimer(stopwatch, activity)
         } else if (call.method.equals("startTimer")) {
             val data = call.argument<String>("data")
             val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
@@ -94,7 +102,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
         } else if (call.method.equals("removeTimer")) {
             val data = call.argument<String>("data")
             val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            TimerManager.removeTimer(stopwatch.id)
+            TimerManager.removeTimer(stopwatch.id, activity)
         } else if (call.method.equals("resetTimer")) {
             val data = call.argument<String>("data")
             val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
@@ -107,8 +115,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
             TimerManager.updateInitialTimeTimer(gr.id, (gr.arg1 as Double).toLong())
-        }
-        else if (call.method.equals("updateTimerAlarm")) {
+        } else if (call.method.equals("updateTimerAlarm")) {
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
             TimerManager.updateInitialTimeTimer(gr.id, (gr.arg1 as Double).toLong())
@@ -119,16 +126,51 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
             MediaService.stopAlarm(1)
-        }
-        else if (call.method.equals("playAlarm")) {
+        } else if (call.method.equals("playAlarm")) {
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
             MediaService.stopAlarm(1)
             MediaService.playAlarm(1, (gr.arg1 as Double).toInt(), activity)
+        }
+
+
+        // test Commands
+        else if (call.method.equals("testCmd1")) {
+            startFloatingWidgetService()
+
+
+        } else if (call.method.equals("testCmd2")) {
+            createFloatingWidget()
         } else {
             result.notImplemented()
         }
     }
+
+    /*  start floating widget service  */
+    fun createFloatingWidget() {
+        //Check if the application has draw over other apps permission or not?
+        //This permission is by default available for API<23. But for API > 23
+        //you have to ask for the permission in runtime.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(activity)) {
+            //If the draw over permission is not available open the settings screen
+            //to grant the permission.
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + activity.getPackageName()))
+            activity.startActivityForResult(intent, DRAW_OVER_OTHER_APP_PERMISSION_REQUEST_CODE)
+        } else
+        //If permission is granted start floating widget service
+            startFloatingWidgetService()
+
+    }
+
+
+    /*  Start Floating widget service and finish current activity */
+    private fun startFloatingWidgetService() {
+        Log.d(TimerlyPlugin::class.java.name, "Starting Chat Head Service")
+        activity.startService(Intent(activity, FloatingWidgetService::class.java))
+        //activity.finish()
+    }
+
 
     companion object {
         @JvmStatic
@@ -146,6 +188,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
         eventSink = p1
         StopwatchManager.setEventSink(p1)
         TimerManager.setEventSink(p1)
+//        FloatingServiceManager.setEventSink(p1)
     }
 
     override fun onCancel(p0: Any?) {
@@ -153,6 +196,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
         eventSink = null
         StopwatchManager.unsetEventSink()
         TimerManager.unsetEventSink()
+//        FloatingServiceManager.unsetEventSink()
 
     }
 
@@ -163,4 +207,9 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
         StopwatchManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
         TimerManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
     }
+
+    init {
+        FloatingServiceManager.doBindService(activity)
+    }
+
 }

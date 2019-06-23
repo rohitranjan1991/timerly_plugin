@@ -67,7 +67,7 @@ class _MyAppState extends State<MyApp> {
               RaisedButton(
                   onPressed: () {
                     TimerlyPlugin.addStopwatch(
-                        StopwatchData(1, "stopwatch 1", 10, 0));
+                        StopwatchData(1, "stopwatch 1", 10, 0, 1));
                   },
                   child: Text("Add StopWatch")),
               RaisedButton(
@@ -91,7 +91,7 @@ class _MyAppState extends State<MyApp> {
               RaisedButton(
                   onPressed: () {
                     TimerlyPlugin.addStopwatch(
-                        StopwatchData(2, "stopwatch 2", 40, 0));
+                        StopwatchData(2, "stopwatch 2", 40, 0, 1));
                   },
                   child: Text("Add StopWatch")),
               RaisedButton(
