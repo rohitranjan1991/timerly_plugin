@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import android.view.*
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
@@ -23,6 +24,8 @@ import com.timerly.timerlyplugin.managers.StopwatchManager
 import com.timerly.timerlyplugin.managers.TimerManager
 import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_1_CLICKED
 import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_2_CLICKED
+import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_CLOSE_CLICKED
+import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_OPEN_ACTIVITY
 import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_ADD
 import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_REMOVE
 import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_RESET
@@ -177,28 +180,39 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
 
 
     private fun addTimer(timer: Timer) {
-//        addRemoveView()
-        val timerView = addFloatingWidgetView(timer.id, R.layout.floating_widget_timer_layout)
-        implementClickListeners(timer.id)
-        implementTouchListenerToFloatingWidgetView(timer.id)
-        updateTimerValue(timer)
-        updateTimerName(timer.id, timer.name)
+        if (!mFloatingWidgetViewMap!!.containsKey(timer.id)) {
+            val timerView = addFloatingWidgetView(timer.id, R.layout.floating_widget_timer_layout)
+            implementTouchListenerToFloatingWidgetView(timer.id)
+            updateTimerValue(timer)
+            updateTimerName(timer.id, timer.name)
 
-        val button_1 = timerView!!.findViewById<TextView>(R.id.button_1)
-        val button_2 = timerView!!.findViewById<TextView>(R.id.button_2)
-        button_1.setOnClickListener {
-            eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_1_CLICKED, Utils.gson.toJson(timer))))
-        }
-        button_2.setOnClickListener {
-            eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_2_CLICKED, Utils.gson.toJson(timer))))
+            val button_1 = timerView!!.findViewById<TextView>(R.id.button_1)
+            val button_2 = timerView!!.findViewById<TextView>(R.id.button_2)
+            val close_floating_view = timerView!!.findViewById<ImageButton>(R.id.close_floating_view)
+            button_1.setOnClickListener {
+                EventBus.getDefault().post(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_1_CLICKED, Utils.gson.toJson(timer)))
+            }
+            button_2.setOnClickListener {
+                EventBus.getDefault().post(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_2_CLICKED, Utils.gson.toJson(timer)))
+            }
+            close_floating_view.setOnClickListener {
+                EventBus.getDefault().post(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_CLOSE_CLICKED, Utils.gson.toJson(timer)))
+            }
+            timerView.findViewById<TextView>(R.id.heading).setOnClickListener {
+                EventBus.getDefault().post(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_OPEN_ACTIVITY, Utils.gson.toJson(timer)))
+            }
+            timerView.findViewById<TextView>(R.id.timer_value).setOnClickListener {
+                EventBus.getDefault().post(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_OPEN_ACTIVITY, Utils.gson.toJson(timer)))
+            }
         }
     }
 
     private fun addStopwatch(stopwatch: Stopwatch) {
-        addFloatingWidgetView(stopwatch.id, R.layout.floating_widget_stopwatch_layout)
-        implementClickListeners(stopwatch.id)
-        implementTouchListenerToFloatingWidgetView(stopwatch.id)
-        updateStopwatchValue(stopwatch)
+        if (!mFloatingWidgetViewMap!!.containsKey(stopwatch.id)) {
+            addFloatingWidgetView(stopwatch.id, R.layout.floating_widget_stopwatch_layout)
+            implementTouchListenerToFloatingWidgetView(stopwatch.id)
+            updateStopwatchValue(stopwatch)
+        }
     }
 
     private fun startTimer(id: Int) {
@@ -256,7 +270,7 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
         if (mFloatingWidgetViewMap!!.containsKey(timer.id)) {
             val view = mFloatingWidgetViewMap!!.get(timer.id)
             view!!.findViewById<TextView>(R.id.timer_value).text = Utils.formatSeconds(timer.currentTime)
-            view!!.findViewById<TextView>(R.id.button_1).text = if (timer.isPlaying) "Stop" else "Start"
+            //view!!.findViewById<TextView>(R.id.button_1).text = if (timer.isPlaying) "Stop" else "Start"
         }
     }
 
@@ -304,8 +318,6 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
 
     /*  Add Floating Widget View to Window Manager  */
     private fun addFloatingWidgetView(id: Int, layout: Int): View {
-
-        Log.d(FloatingWidgetService::class.java.name, "addFloatingWidgetView called")
         val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
 
         //Inflate the floating view layout we created
@@ -323,8 +335,8 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
         params.gravity = Gravity.TOP or Gravity.LEFT
 
         //Initially view will be added to top-left corner, you change x-y coordinates according to your need
-        params.x = 5
-        params.y = 200
+        params.x = 20
+        params.y = szWindow.y / 2 - 100
 
         //Add the view to the window
         mWindowManager!!.addView(view, params)
@@ -511,14 +523,9 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
         })
     }
 
-    private fun implementClickListeners(id: Int) {
-//        mFloatingWidgetViewMap!!.get(id)!!.findViewById<ImageView>(R.id.close_floating_view).setOnClickListener(this)
-//        mFloatingWidgetViewMap!!.get(id)!!.findViewById<ImageView>(R.id.close_expanded_view).setOnClickListener(this)
-//        mFloatingWidgetViewMap!!.get(id)!!.findViewById<ImageView>(R.id.open_activity_button).setOnClickListener(this)
-    }
-
 
     override fun onClick(v: View) {
+
         when (v.id) {
             R.id.close_floating_view ->
                 //close the service and remove the from from the window
@@ -543,18 +550,18 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
     /*  on Floating Widget Long Click, increase the size of remove view as it look like taking focus */
     private fun onFloatingWidgetLongClick(id: Int) {
         //Get remove Floating view params
-        val removeParams = removeFloatingWidgetView!!.layoutParams as WindowManager.LayoutParams
+//        val removeParams = removeFloatingWidgetView!!.layoutParams as WindowManager.LayoutParams
 
         //get x and y coordinates of remove view
-        val x_cord = (szWindow.x - removeFloatingWidgetView!!.width) / 2
-        val y_cord = szWindow.y - (removeFloatingWidgetView!!.height + statusBarHeight)
+//        val x_cord = (szWindow.x - removeFloatingWidgetView!!.width) / 2
+//        val y_cord = szWindow.y - (removeFloatingWidgetView!!.height + statusBarHeight)
 
 
-        removeParams.x = x_cord
-        removeParams.y = y_cord
+//        removeParams.x = x_cord
+//        removeParams.y = y_cord
 
         //Update Remove view params
-        mWindowManager!!.updateViewLayout(removeFloatingWidgetView, removeParams)
+//        mWindowManager!!.updateViewLayout(removeFloatingWidgetView, removeParams)
     }
 
     /*  Reset position of Floating Widget view on dragging  */

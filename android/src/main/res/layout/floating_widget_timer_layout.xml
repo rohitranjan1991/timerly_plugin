@@ -15,28 +15,14 @@
         android:background="@drawable/corner_radius"
         android:paddingBottom="8dp">
 
-        <!--  View while view is collapsed  -->
-
-
-        <!--&lt;!&ndash;   ImageView of floating widget  &ndash;&gt;-->
-        <!--<ImageView-->
-        <!--android:id="@+id/collapsed_iv"-->
-        <!--android:layout_width="70dp"-->
-        <!--android:layout_height="70dp"-->
-        <!--android:layout_marginTop="8dp"-->
-        <!--android:src="@mipmap/ic_launcher"-->
-        <!--tools:ignore="ContentDescription" />-->
-
-        <!--&lt;!&ndash;   Close button to close Floating Widget View  &ndash;&gt;-->
-
         <TextView
             android:id="@+id/heading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Sample Heading"
-            android:layout_marginTop="8dp"
-            android:textColor="@color/light_black"
             android:layout_centerHorizontal="true"
+            android:layout_marginTop="8dp"
+            android:text="Sample Heading"
+            android:textColor="@color/light_black"
             android:textSize="16sp"
             android:textStyle="bold" />
 
@@ -44,11 +30,11 @@
             android:id="@+id/timer_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/light_black"
             android:layout_below="@id/heading"
             android:layout_centerHorizontal="true"
             android:paddingHorizontal="10dp"
             android:text="00:00:00"
+            android:textColor="@color/light_black"
             android:textSize="20sp" />
 
         <View
@@ -58,8 +44,8 @@
             android:layout_below="@+id/timer_value"
             android:layout_marginLeft="10dp"
             android:layout_marginTop="5dp"
-            android:layout_marginBottom="5dp"
             android:layout_marginRight="10dp"
+            android:layout_marginBottom="5dp"
             android:background="@color/grey_1" />
 
         <LinearLayout
@@ -82,10 +68,11 @@
                 android:text="Start"
                 android:textColor="@color/dodger_blue"
                 android:textSize="16sp" />
+
             <View
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
-                android:background="@color/grey_1"/>
+                android:background="@color/grey_1" />
 
             <TextView
                 android:id="@+id/button_2"
@@ -94,12 +81,13 @@
                 android:layout_weight="1"
                 android:gravity="center"
                 android:text="Reset"
-                android:textColor="@color/dodger_blue" />
+                android:textColor="@color/dodger_blue"
+                android:textSize="16sp" />
         </LinearLayout>
     </RelativeLayout>
 
 
-    <ImageView
+    <ImageButton
         android:id="@+id/close_floating_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

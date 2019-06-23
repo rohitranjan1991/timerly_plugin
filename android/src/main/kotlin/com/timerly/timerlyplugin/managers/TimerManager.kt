@@ -10,6 +10,7 @@ import com.timerly.timerlyplugin.Utils.formatSeconds
 import com.timerly.timerlyplugin.models.*
 import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_1_CLICKED
 import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_2_CLICKED
+import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_CLOSE_CLICKED
 import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_STOP_CLICKED
 import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_ADD
 import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_REMOVE
@@ -48,13 +49,34 @@ object TimerManager {
             Log.d("TimerManager", "Add Timer Failed. Timer Object null")
             return
         }
-        Log.d("TimerManager", "Timer Added with Id: " + timer.id)
-        if (!timers.containsKey(timer.id))
+
+        if (!timers.containsKey(timer.id)) {
             timers.put(timer.id, timer)
 
-        if (timers.size == 1) {
-            eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_TO_SERVICE_ADD, Utils.gson.toJson(timer))))
-            EventBus.getDefault().post(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_TO_SERVICE_ADD, Utils.gson.toJson(timer)))
+            // TODO - check teh use of this if condition
+            if (timers.size == 1) {
+                eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_TO_SERVICE_ADD, Utils.gson.toJson(timer))))
+            }
+            // show the floating Widget if the value is true
+            if (timer.isFloatingWidgetDisplayed) {
+                toggleFloatingWidget(timer.id)
+            }
+            Log.d("TimerManager", "Timer Added with Id: " + timer.id)
+        }
+    }
+
+    /**
+     * toggles the floating Widget Window
+     */
+    fun toggleFloatingWidget(id: Int) {
+        if (timers.containsKey(id)) {
+            val timer = timers.get(id)
+            if (timer!!.isFloatingWidgetDisplayed) {
+                EventBus.getDefault().post(TimerlyTimerEvent(id, TimerManager.widgetType, COMMAND_TO_SERVICE_REMOVE, Utils.gson.toJson(timer)))
+            } else {
+                EventBus.getDefault().post(TimerlyTimerEvent(id, TimerManager.widgetType, COMMAND_TO_SERVICE_ADD, Utils.gson.toJson(timer)))
+            }
+            timer.isFloatingWidgetDisplayed = !timer.isFloatingWidgetDisplayed
         }
     }
 
@@ -70,6 +92,7 @@ object TimerManager {
                 Log.d("TimerManager", "START Timer: Timer not started due to time not set with Id: $id")
                 return
             }
+            timer.isPlaying = true
             val request = CreateForegroundServiceRequest(timer!!.id, 1, timer!!.name, "Timer Started", timer!!.name, "Timer Started", false, NotificationCompat.PRIORITY_MAX, true, "Timer Notifications", "245699", listOf(NotificationActionButton(timer!!.id, "Stop", COMMAND_FROM_SERVICE_BUTTON_1_CLICKED), NotificationActionButton(timer!!.id, "Reset", COMMAND_FROM_SERVICE_STOP_CLICKED)), 4)
 
             val intent = Intent(activity, TimerlyForegroundService::class.java)
@@ -79,6 +102,7 @@ object TimerManager {
 
             //Floating Service Event
             EventBus.getDefault().post(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_TO_SERVICE_START, ""))
+            eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, widgetType, "START_TIMER", Utils.gson.toJson(timer))))
 
             if (timer.currentTime == 0L)
                 timer.currentTime = timer.initialTime
@@ -132,7 +156,7 @@ object TimerManager {
     /**
      * removes the Timer with the id
      */
-    fun removeTimer(id: Int, activity: FlutterActivity) {
+    fun removeTimer(id: Int) {
         Log.d("TimerManager", "REMOVE Timer: Removing Timer with Id: $id")
         if (timers.containsKey(id)) {
             timers.remove(id)
@@ -152,6 +176,7 @@ object TimerManager {
             val timer = timers.get(id);
             timer!!.currentTime = timer.initialTime
             stopTimer(id, activity)
+            eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, widgetType, "UPDATE_TIMER_VALUE", Utils.gson.toJson(timer))))
             EventBus.getDefault().post(TimerlyTimerEvent(id, widgetType, COMMAND_TO_SERVICE_RESET, Utils.gson.toJson(timer)))
             return timer
         }
@@ -175,8 +200,10 @@ object TimerManager {
     fun updateInitialTimeTimer(id: Int, value: Long) {
         Log.d("TimerManager", "UPDATE Timer: Looking for Timer with Id: $id")
         if (timers.containsKey(id)) {
-            timers.get(id)!!.initialTime = value
-            timers.get(id)!!.currentTime = value
+            val timer = timers.get(id)
+            timer!!.initialTime = value
+            timer!!.currentTime = value
+            EventBus.getDefault().post(TimerlyTimerEvent(id, widgetType, COMMAND_TO_SERVICE_UPDATE_VALUE, Utils.gson.toJson(timer)))
         }
     }
 
@@ -211,6 +238,9 @@ object TimerManager {
                 }
                 COMMAND_FROM_SERVICE_STOP_CLICKED -> {
                     stopTimer(timerlyTimerEvent.id, activity)
+                }
+                COMMAND_FROM_SERVICE_BUTTON_CLOSE_CLICKED -> {
+                    toggleFloatingWidget(timer!!.id)
                 }
             }
 //            eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timerlyTimerEvent.id, widgetType, timerlyTimerEvent.command, Utils.gson.toJson(timer))))

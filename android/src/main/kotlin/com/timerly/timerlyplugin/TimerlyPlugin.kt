@@ -11,6 +11,7 @@ import com.google.gson.JsonObject
 import com.timerly.timerlyplugin.managers.StopwatchManager
 import com.timerly.timerlyplugin.managers.TimerManager
 import com.timerly.timerlyplugin.models.*
+import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_OPEN_ACTIVITY
 import com.timerly.timerlyplugin.services.FloatingWidgetService
 import com.timerly.timerlyplugin.services.MediaService
 import io.flutter.app.FlutterActivity
@@ -23,6 +24,9 @@ import io.flutter.plugin.common.PluginRegistry.Registrar
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import androidx.core.content.ContextCompat.startActivity
+
+
 
 
 class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventChannel.StreamHandler {
@@ -32,8 +36,10 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
     private var notificationIds: MutableList<Int> = mutableListOf()
     /*  Permission request code to draw over other apps  */
     private val DRAW_OVER_OTHER_APP_PERMISSION_REQUEST_CODE = 1222
+    private var isAppVisible = true
 
     override fun onMethodCall(call: MethodCall, result: Result): Unit {
+        Log.d("TimerlyPlugin", "call.method : " + call.method)
         if (!EventBus.getDefault().isRegistered(this))
             EventBus.getDefault().register(this)
         if (call.method.equals("getPlatformVersion")) {
@@ -50,9 +56,13 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             response.add("timers", allTimers)
             response.add("stopwatches", allStopwatches)
             result.success(response.toString());
+        } else if (call.method.equals("updateAppVisibilityState")) {
+            val data = call.argument<String>("data")
+            val state = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            isAppVisible = state.id != 0
         }
-        // Stopwatch Commands
 
+        // Stopwatch Commands
         else if (call.method.equals("addStopwatch")) {
             val data = call.argument<String>("data")
             val timer = Gson().fromJson<Stopwatch>(data, Stopwatch::class.java)
@@ -81,30 +91,32 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
             StopwatchManager.updateStopwatchName(gr.id, gr.arg1 as String)
+        } else if (call.method.equals("toggleStopwatchFloatingWidget")) {
+
         }
 
         // Timer Commands
 
         else if (call.method.equals("addTimer")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<Timer>(data, Timer::class.java)
-            TimerManager.addNewTimer(stopwatch, activity)
+            val gr = Gson().fromJson<Timer>(data, Timer::class.java)
+            TimerManager.addNewTimer(gr, activity)
         } else if (call.method.equals("startTimer")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            TimerManager.startTimer(stopwatch.id, activity)
+            val gr = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.startTimer(gr.id, activity)
         } else if (call.method.equals("stopTimer")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            TimerManager.stopTimer(stopwatch.id, activity)
+            val gr = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.stopTimer(gr.id, activity)
         } else if (call.method.equals("removeTimer")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            TimerManager.removeTimer(stopwatch.id, activity)
+            val gr = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.removeTimer(gr.id)
         } else if (call.method.equals("resetTimer")) {
             val data = call.argument<String>("data")
-            val stopwatch = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
-            TimerManager.resetTimer(stopwatch.id, activity)
+            val gr = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.resetTimer(gr.id, activity)
         } else if (call.method.equals("updateTimerName")) {
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
@@ -116,7 +128,12 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
         } else if (call.method.equals("updateTimerAlarm")) {
             val data = call.argument<String>("data")
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
-            TimerManager.updateInitialTimeTimer(gr.id, (gr.arg1 as Double).toLong())
+            TimerManager.updateTimerAlarm(gr.id, (gr.arg1 as Double).toInt())
+        } else if (call.method.equals("toggleTimerFloatingWidget")) {
+            Log.d("Timerly Plugin", "toggleTimerFloatingWidget called")
+            val data = call.argument<String>("data")
+            val gr = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            TimerManager.toggleFloatingWidget(gr.id)
         }
 
         // misc command
@@ -202,12 +219,23 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onNotificationEvent(timerlyTimerEvent: TimerlyTimerEvent) {
         Log.d("TimerlyNotification", "received EventBus Notification in Timerly Plugin")
-        when (timerlyTimerEvent.widgetType) {
-            TimerManager.widgetType -> {
-                TimerManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
+        when (timerlyTimerEvent.command) {
+            COMMAND_FROM_SERVICE_BUTTON_OPEN_ACTIVITY -> {
+                if(!isAppVisible){
+                    val dialogIntent = Intent(activity, activity.javaClass)
+                    dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    activity.startActivity(dialogIntent)
+                }
             }
-            StopwatchManager.widgetType -> {
-                StopwatchManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
+            else -> {
+                when (timerlyTimerEvent.widgetType) {
+                    TimerManager.widgetType -> {
+                        TimerManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
+                    }
+                    StopwatchManager.widgetType -> {
+                        StopwatchManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
+                    }
+                }
             }
         }
     }

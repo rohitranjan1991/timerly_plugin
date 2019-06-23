@@ -105,10 +105,10 @@ class TimerlyPlugin {
   }
 
   // Timer Commands
-  static addTimer(TimerData stopwatch) async {
+  static addTimer(TimerData timer) async {
     if (Platform.isAndroid) {
       await _channel.invokeMethod(
-          'addTimer', {"data": json.encode(stopwatch.toJson())});
+          'addTimer', {"data": json.encode(timer.toJson())});
     }
   }
 
@@ -172,6 +172,20 @@ class TimerlyPlugin {
     if (Platform.isAndroid) {
       await _channel.invokeMethod(
           'updateTimerAlarm', {'data': json.encode(gr.toJson())});
+    }
+  }
+
+  static toggleTimerFloatingWidget(GenericRequest1 gr) async{
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'toggleTimerFloatingWidget', {'data': json.encode(gr.toJson())});
+    }
+  }
+
+  static updateAppVisibilityState(GenericRequest1 gr) async{
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod(
+          'updateAppVisibilityState', {'data': json.encode(gr.toJson())});
     }
   }
 
