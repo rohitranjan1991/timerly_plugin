@@ -52,6 +52,14 @@ class TimerlyPlugin {
       return await _channel.invokeMethod('getAllWidgets');
     }
   }
+  
+  static getWidgetsById(int id) async {
+    if (Platform.isAndroid) {
+      return await _channel.invokeMethod(
+          'getWidgetsById', {"data": json.encode(GenericRequest1(id).toJson())});
+    }
+  }
+
 
   /// Stopwatch Commands
 

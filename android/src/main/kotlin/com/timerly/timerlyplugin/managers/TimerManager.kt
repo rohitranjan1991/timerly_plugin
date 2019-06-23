@@ -245,4 +245,14 @@ object TimerManager {
     fun getAllTimersData(): List<Timer> {
         return timers.values.toList()
     }
+
+    /**
+     * returns back the timer by ID
+     */
+    fun getTimerById(id: Int): Timer? {
+        if (timers.containsKey(id)) {
+            return timers.get(id)!!
+        }
+        return null
+    }
 }

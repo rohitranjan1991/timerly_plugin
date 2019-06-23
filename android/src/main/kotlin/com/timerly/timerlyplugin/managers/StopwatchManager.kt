@@ -217,4 +217,14 @@ object StopwatchManager {
     fun getAllStopwatchData(): List<Stopwatch> {
         return stopwatches.values.toList()
     }
+
+    /**
+     * returns back the stopwatch by ID
+     */
+    fun getStopwatchById(id: Int): Stopwatch? {
+        if (stopwatches.containsKey(id)) {
+            return stopwatches.get(id)!!
+        }
+        return null
+    }
 }

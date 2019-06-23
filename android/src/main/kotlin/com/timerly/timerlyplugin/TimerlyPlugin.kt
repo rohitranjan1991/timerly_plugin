@@ -27,8 +27,6 @@ import org.greenrobot.eventbus.ThreadMode
 import androidx.core.content.ContextCompat.startActivity
 
 
-
-
 class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventChannel.StreamHandler {
 
     private var eventSink: EventChannel.EventSink? = null
@@ -46,7 +44,6 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             result.success("Android ${Build.VERSION.RELEASE}")
         }
         //EventBus.getDefault().unregister(this)
-
         else if (call.method.equals("getAllWidgets")) {
             val response = JsonObject();
             val allTimers = JsonArray();
@@ -56,6 +53,18 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             response.add("timers", allTimers)
             response.add("stopwatches", allStopwatches)
             result.success(response.toString());
+        } else if (call.method.equals("getWidgetsById")) {
+            val response = JsonObject();
+            val data = call.argument<String>("data")
+            val gr = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            val timer = TimerManager.getTimerById(gr.id)
+            val stopwatch = StopwatchManager.getStopwatchById(gr.id)
+            Log.d("TiemrlyPlugin", "getWidgetsById called  : " + (timer == null) + " : " + (stopwatch == null))
+            if (timer == null && stopwatch == null) {
+                result.success(response.toString())
+            } else {
+                result.success(if (timer != null) Utils.gson.toJson(timer).toString() else Utils.gson.toJson(stopwatch).toString())
+            }
         } else if (call.method.equals("updateAppVisibilityState")) {
             val data = call.argument<String>("data")
             val state = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
@@ -223,7 +232,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
         Log.d("TimerlyNotification", "received EventBus Notification in Timerly Plugin")
         when (timerlyTimerEvent.command) {
             COMMAND_FROM_SERVICE_BUTTON_OPEN_ACTIVITY -> {
-                if(!isAppVisible){
+                if (!isAppVisible) {
                     val dialogIntent = Intent(activity, activity.javaClass)
                     dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     activity.startActivity(dialogIntent)
