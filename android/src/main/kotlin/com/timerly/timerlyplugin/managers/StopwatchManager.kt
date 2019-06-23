@@ -8,6 +8,8 @@ import com.timerly.timerlyplugin.Utils
 import com.timerly.timerlyplugin.Utils.createLocalNotification
 import com.timerly.timerlyplugin.Utils.formatSeconds
 import com.timerly.timerlyplugin.models.*
+import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_LAP_CLICKED
+import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_STOP_CLICKED
 import com.timerly.timerlyplugin.services.ITimerTickCallback
 import com.timerly.timerlyplugin.services.TimerService
 import io.flutter.app.FlutterActivity
@@ -17,7 +19,7 @@ object StopwatchManager {
 
     private val stopwatches: MutableMap<Int, Stopwatch> = mutableMapOf()
     private var eventSink: EventChannel.EventSink? = null
-    private val widgetType: Int = 0
+    val widgetType: Int = 0
 
 
     fun setEventSink(es: EventChannel.EventSink?) {
@@ -50,7 +52,7 @@ object StopwatchManager {
         if (stopwatches.containsKey(id)) {
             Log.d("StopwatchManager", "START Stopwatch: Starting Timer with Id: $id")
             val stopwatch = stopwatches.get(id)
-            val request = CreateForegroundServiceRequest(stopwatch!!.id, 0, stopwatch!!.name, "Stopwatch Started", stopwatch!!.name, "Stopwatch Started", false, NotificationCompat.PRIORITY_MAX, true, "Stopwatch Notifications", "245698", listOf(NotificationActionButton(stopwatch!!.id, "Lap", "LAP"), NotificationActionButton(stopwatch!!.id, "Stop", "STOP")), 4)
+            val request = CreateForegroundServiceRequest(stopwatch!!.id, 0, stopwatch!!.name, "Stopwatch Started", stopwatch!!.name, "Stopwatch Started", false, NotificationCompat.PRIORITY_MAX, true, "Stopwatch Notifications", "245698", listOf(NotificationActionButton(stopwatch!!.id, "Lap", COMMAND_FROM_SERVICE_LAP_CLICKED), NotificationActionButton(stopwatch!!.id, "Stop", COMMAND_FROM_SERVICE_STOP_CLICKED)), 4)
             val intent = Intent(activity, TimerlyForegroundService::class.java)
             intent.putExtra("data", Utils.gson.toJson(request))
             intent.action = TimerlyForegroundService.ACTION_ADD_NOTIFICATION
@@ -60,7 +62,7 @@ object StopwatchManager {
                 override fun onTimerTick() {
                     stopwatch.currentTime += 1
                     Log.d("StopwatchManager", "Stopwatch UPDATE: Updated Timer Value with Id: " + stopwatch.id + " with current time : " + stopwatch.currentTime)
-                    val request1 = CreateForegroundServiceRequest(stopwatch!!.id, 0, stopwatch!!.name, formatSeconds(stopwatch.currentTime), stopwatch!!.name, formatSeconds(stopwatch.currentTime), false, NotificationCompat.PRIORITY_LOW, true, "Stopwatch Notifications", "245698", listOf(NotificationActionButton(stopwatch!!.id, "Lap", "LAP"), NotificationActionButton(stopwatch!!.id, "Stop", "STOP")), 2)
+                    val request1 = CreateForegroundServiceRequest(stopwatch!!.id, 0, stopwatch!!.name, formatSeconds(stopwatch.currentTime), stopwatch!!.name, formatSeconds(stopwatch.currentTime), false, NotificationCompat.PRIORITY_LOW, true, "Stopwatch Notifications", "245698", listOf(NotificationActionButton(stopwatch!!.id, "Lap", COMMAND_FROM_SERVICE_LAP_CLICKED), NotificationActionButton(stopwatch!!.id, "Stop", COMMAND_FROM_SERVICE_STOP_CLICKED)), 2)
                     val intent1 = Intent(activity, TimerlyForegroundService::class.java)
                     intent1.putExtra("data", Utils.gson.toJson(request1))
                     intent1.action = TimerlyForegroundService.ACTION_UPDATE_NOTIFICATION
@@ -148,10 +150,10 @@ object StopwatchManager {
         if (stopwatches.containsKey(timerlyTimerEvent.id)) {
             val stopwatch = stopwatches.get(timerlyTimerEvent.id)
             when (timerlyTimerEvent.command) {
-                "STOP" -> {
+                COMMAND_FROM_SERVICE_STOP_CLICKED -> {
                     stopStopwatch(timerlyTimerEvent.id, activity)
                 }
-                "LAP" -> {
+                COMMAND_FROM_SERVICE_LAP_CLICKED -> {
                     lapStopwatch(timerlyTimerEvent.id)
                 }
                 "REMOVE" -> {

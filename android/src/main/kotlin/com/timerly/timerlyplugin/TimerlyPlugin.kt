@@ -5,11 +5,9 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
-import android.view.View
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.timerly.timerlyplugin.managers.FloatingServiceManager
 import com.timerly.timerlyplugin.managers.StopwatchManager
 import com.timerly.timerlyplugin.managers.TimerManager
 import com.timerly.timerlyplugin.models.*
@@ -148,6 +146,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
 
     /*  start floating widget service  */
     fun createFloatingWidget() {
+
         //Check if the application has draw over other apps permission or not?
         //This permission is by default available for API<23. But for API > 23
         //you have to ask for the permission in runtime.
@@ -188,7 +187,7 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
         eventSink = p1
         StopwatchManager.setEventSink(p1)
         TimerManager.setEventSink(p1)
-//        FloatingServiceManager.setEventSink(p1)
+        createFloatingWidget()
     }
 
     override fun onCancel(p0: Any?) {
@@ -200,16 +199,23 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
 
     }
 
-
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onNotificationEvent(timerlyTimerEvent: TimerlyTimerEvent) {
-        Log.d("TimerlyNotification", "received EventBus Notification")
-        StopwatchManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
-        TimerManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
+        Log.d("TimerlyNotification", "received EventBus Notification in Timerly Plugin")
+        when (timerlyTimerEvent.widgetType) {
+            TimerManager.widgetType -> {
+                TimerManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
+            }
+            StopwatchManager.widgetType -> {
+                StopwatchManager.processNotificationCallback(eventSink, timerlyTimerEvent, activity)
+            }
+        }
     }
 
     init {
-        FloatingServiceManager.doBindService(activity)
+//        FloatingServiceManager.doBindService(activity)
+        Log.d("TimerlyPlugin", "Starting Floating Widget Service")
+
     }
 
 }

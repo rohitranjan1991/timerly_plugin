@@ -1,5 +1,6 @@
 package com.timerly.timerlyplugin.services
 
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -17,26 +18,32 @@ import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.annotation.Nullable
 import com.timerly.timerlyplugin.R
+import com.timerly.timerlyplugin.Utils
+import com.timerly.timerlyplugin.managers.StopwatchManager
+import com.timerly.timerlyplugin.managers.TimerManager
+import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_1_CLICKED
+import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_2_CLICKED
+import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_ADD
+import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_REMOVE
+import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_RESET
+import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_START
+import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_STOP
+import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_UPDATE_TITLE
+import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_UPDATE_VALUE
 import com.timerly.timerlyplugin.models.Stopwatch
 import com.timerly.timerlyplugin.models.Timer
+import com.timerly.timerlyplugin.models.TimerlyTimerEvent
 import io.flutter.plugin.common.EventChannel
 import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 
 
-/**
- * Created by sonu on 28/03/17.
- */
+class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.StreamHandler {
 
-class FloatingWidgetService : Service(), View.OnClickListener{
     private var mWindowManager: WindowManager? = null
-    private var mFloatingWidgetViewMap: MutableMap<Int, View>? = mutableMapOf<Int, View>()
-//    private var collapsedViewMap: MutableMap<Int, View>? = mutableMapOf<Int, View>()
-//    private var expandedViewMap: MutableMap<Int, View>? = mutableMapOf<Int, View>()
-
-//    private var mFloatingWidgetView: View? = null
-//    private var collapsedView: View? = null
-//    private var expandedView: View? = null
-
+    private var mFloatingWidgetViewMap: MutableMap<Int, View>? = mutableMapOf()
+    private var eventSink: EventChannel.EventSink? = null
     private var remove_image_view: ImageView? = null
     private val szWindow = Point()
     private var removeFloatingWidgetView: View? = null
@@ -72,7 +79,7 @@ class FloatingWidgetService : Service(), View.OnClickListener{
 
     @Nullable
     override fun onBind(intent: Intent): IBinder? {
-        return mBinder
+        return null
     }
 
     override fun onCreate() {
@@ -82,71 +89,195 @@ class FloatingWidgetService : Service(), View.OnClickListener{
         mWindowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         getWindowManagerDefaultDisplay()
-//        if (!EventBus.getDefault().isRegistered(this))
-//            EventBus.getDefault().register(this)
+        if (!EventBus.getDefault().isRegistered(this)) {
+            Log.d("FloatingWidgetService", "Event Bus registered")
+            EventBus.getDefault().register(this)
+        }
 
-        //Init LayoutInflater
+        Log.d("FloatingWidgetService", "Service started")
+    }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onNotificationEvent(timerlyTimerEvent: TimerlyTimerEvent) {
+        Log.d("FloatingWidgetService", "Command Received : " + timerlyTimerEvent.command)
+        when (timerlyTimerEvent.command) {
+            COMMAND_TO_SERVICE_START -> {
+                when (timerlyTimerEvent.widgetType) {
+                    TimerManager.widgetType -> {
+                        startTimer(timerlyTimerEvent.id)
+                    }
+                    StopwatchManager.widgetType -> {
+                        startStopwatch(timerlyTimerEvent.id)
+                    }
+                }
+            }
+            COMMAND_TO_SERVICE_UPDATE_VALUE -> {
+                when (timerlyTimerEvent.widgetType) {
+                    TimerManager.widgetType -> {
+                        updateTimerValue(Utils.gson.fromJson(timerlyTimerEvent.data, Timer::class.java))
+                    }
+                    StopwatchManager.widgetType -> {
+                        updateStopwatchValue(Utils.gson.fromJson(timerlyTimerEvent.data, Stopwatch::class.java))
+                    }
+                }
 
-//        addRemoveView(inflater)
-//        addFloatingWidgetView(inflater)
-//        implementClickListeners()
-//        implementTouchListenerToFloatingWidgetView()
+            }
+            COMMAND_TO_SERVICE_UPDATE_TITLE -> {
+                when (timerlyTimerEvent.widgetType) {
+                    TimerManager.widgetType -> {
+                        updateTimerName(timerlyTimerEvent.id, timerlyTimerEvent.data)
+                    }
+                    StopwatchManager.widgetType -> {
+                        updateStopwatchName(timerlyTimerEvent.id, timerlyTimerEvent.data)
+                    }
+                }
+            }
+            COMMAND_TO_SERVICE_STOP -> {
+                when (timerlyTimerEvent.widgetType) {
+                    TimerManager.widgetType -> {
+                        stopTimer(timerlyTimerEvent.id)
+                    }
+                    StopwatchManager.widgetType -> {
+                        stopStopwatch(timerlyTimerEvent.id)
+                    }
+                }
+            }
+            COMMAND_TO_SERVICE_RESET -> {
+                when (timerlyTimerEvent.widgetType) {
+                    TimerManager.widgetType -> {
+                        resetTimer(Utils.gson.fromJson(timerlyTimerEvent.data, Timer::class.java))
+                    }
+                    StopwatchManager.widgetType -> {
+                        resetStopwatch(Utils.gson.fromJson(timerlyTimerEvent.data, Stopwatch::class.java))
+                    }
+                }
+            }
+            COMMAND_TO_SERVICE_REMOVE -> {
+                when (timerlyTimerEvent.widgetType) {
+                    TimerManager.widgetType -> {
+                        removeTimer(timerlyTimerEvent.id)
+                    }
+                    StopwatchManager.widgetType -> {
+                        removeStopwatch(timerlyTimerEvent.id)
+                    }
+                }
+            }
+            COMMAND_TO_SERVICE_ADD -> {
+                when (timerlyTimerEvent.widgetType) {
+                    TimerManager.widgetType -> {
+                        addTimer(Utils.gson.fromJson(timerlyTimerEvent.data, Timer::class.java))
+                    }
+                    StopwatchManager.widgetType -> {
+                        addStopwatch(Utils.gson.fromJson(timerlyTimerEvent.data, Stopwatch::class.java))
+                    }
+                }
+            }
+        }
     }
 
 
-    fun addTimer(timer: Timer) {
-        val timerView = addRemoveView()
-        addFloatingWidgetView(timer.id, R.layout.floating_widget_timer_layout)
+    private fun addTimer(timer: Timer) {
+//        addRemoveView()
+        val timerView = addFloatingWidgetView(timer.id, R.layout.floating_widget_timer_layout)
         implementClickListeners(timer.id)
         implementTouchListenerToFloatingWidgetView(timer.id)
-        updateTimer(timer)
+        updateTimerValue(timer)
+        updateTimerName(timer.id, timer.name)
 
-//        val button_1 = timerView!!.findViewById<TextView>(R.id.button_1)
-//        val button_2 = timerView!!.findViewById<TextView>(R.id.button_2)
-//        button_1.setOnClickListener {
-//
-//        }
-
+        val button_1 = timerView!!.findViewById<TextView>(R.id.button_1)
+        val button_2 = timerView!!.findViewById<TextView>(R.id.button_2)
+        button_1.setOnClickListener {
+            eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_1_CLICKED, Utils.gson.toJson(timer))))
+        }
+        button_2.setOnClickListener {
+            eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_2_CLICKED, Utils.gson.toJson(timer))))
+        }
     }
 
-    fun addStopwatch(stopwatch: Stopwatch) {
+    private fun addStopwatch(stopwatch: Stopwatch) {
         addFloatingWidgetView(stopwatch.id, R.layout.floating_widget_stopwatch_layout)
         implementClickListeners(stopwatch.id)
         implementTouchListenerToFloatingWidgetView(stopwatch.id)
-        updateStopwatch(stopwatch)
+        updateStopwatchValue(stopwatch)
     }
 
-    fun removeTimer(id: Int) {
-//        expandedViewMap!!.remove(id)
-//        collapsedViewMap!!.remove(id)
-        mWindowManager!!.removeView(mFloatingWidgetViewMap!!.get(id))
-        mFloatingWidgetViewMap!!.remove(id)
+    private fun startTimer(id: Int) {
+        if (mFloatingWidgetViewMap!!.containsKey(id)) {
+            val view = mFloatingWidgetViewMap!!.get(id)
+            view!!.findViewById<TextView>(R.id.button_1).text = "Stop"
+            view!!.findViewById<TextView>(R.id.button_2).text = "Reset"
+        }
     }
 
-    fun removeStopwatch(id: Int) {
-//        expandedViewMap!!.remove(id)
-//        collapsedViewMap!!.remove(id)
-        mWindowManager!!.removeView(mFloatingWidgetViewMap!!.get(id))
-        mFloatingWidgetViewMap!!.remove(id)
+    private fun startStopwatch(id: Int) {
 
     }
 
-    fun updateTimer(timer: Timer) {
-//        val view = collapsedViewMap!!.get(timer.id)
-//        view!!.findViewById<TextView>(R.id.heading).setText(timer.name)
-//        view!!.findViewById<TextView>(R.id.timer_value).setText(formatSeconds(timer.currentTime))
+    private fun removeTimer(id: Int) {
+        if (mFloatingWidgetViewMap!!.containsKey(id)) {
+            val view = mFloatingWidgetViewMap!!.get(id)
+            mWindowManager!!.removeView(view)
+            mFloatingWidgetViewMap!!.remove(id)
+        }
     }
 
-    fun updateStopwatch(stopwatch: Stopwatch) {
+    private fun removeStopwatch(id: Int) {
+        if (mFloatingWidgetViewMap!!.containsKey(id)) {
+            val view = mFloatingWidgetViewMap!!.get(id)
+            mWindowManager!!.removeView(view)
+            mFloatingWidgetViewMap!!.remove(id)
+        }
+    }
+
+    private fun resetTimer(timer: Timer) {
+        if (mFloatingWidgetViewMap!!.containsKey(timer.id)) {
+            val view = mFloatingWidgetViewMap!!.get(timer.id)
+            view!!.findViewById<TextView>(R.id.timer_value).text = Utils.formatSeconds(timer.initialTime)
+            view!!.findViewById<TextView>(R.id.button_1).text = "Start"
+        }
+    }
+
+    private fun resetStopwatch(stopwatch: Stopwatch) {
+
+    }
+
+    private fun stopTimer(id: Int) {
+        if (mFloatingWidgetViewMap!!.containsKey(id)) {
+            val view = mFloatingWidgetViewMap!!.get(id)
+            view!!.findViewById<TextView>(R.id.button_1).text = "Start"
+        }
+    }
+
+    private fun stopStopwatch(id: Int) {
+
+    }
+
+    private fun updateTimerValue(timer: Timer) {
+        if (mFloatingWidgetViewMap!!.containsKey(timer.id)) {
+            val view = mFloatingWidgetViewMap!!.get(timer.id)
+            view!!.findViewById<TextView>(R.id.timer_value).text = Utils.formatSeconds(timer.currentTime)
+            view!!.findViewById<TextView>(R.id.button_1).text = if (timer.isPlaying) "Stop" else "Start"
+        }
+    }
+
+    private fun updateStopwatchValue(stopwatch: Stopwatch) {
 //        val view = collapsedViewMap!!.get(stopwatch.id)
 //        view!!.findViewById<TextView>(R.id.heading).setText(stopwatch.name)
 //        view!!.findViewById<TextView>(R.id.timer_value).setText(formatSeconds(stopwatch.currentTime))
     }
 
+    private fun updateTimerName(id: Int, name: String?) {
+        if (mFloatingWidgetViewMap!!.containsKey(id) && name != null) {
+            val view = mFloatingWidgetViewMap!!.get(id)
+            view!!.findViewById<TextView>(R.id.heading).text = name
+        }
+    }
+
+    private fun updateStopwatchName(id: Int, name: String?) {}
+
 
     /*  Add Remove View to Window Manager  */
-    private fun addRemoveView(){
+    private fun addRemoveView() {
         val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         //Inflate the removing view layout we created
         removeFloatingWidgetView = inflater.inflate(R.layout.remove_floating_widget_layout, null)
@@ -172,12 +303,12 @@ class FloatingWidgetService : Service(), View.OnClickListener{
     }
 
     /*  Add Floating Widget View to Window Manager  */
-    private fun addFloatingWidgetView(id: Int, layout: Int):View {
+    private fun addFloatingWidgetView(id: Int, layout: Int): View {
 
         Log.d(FloatingWidgetService::class.java.name, "addFloatingWidgetView called")
         val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+
         //Inflate the floating view layout we created
-        //R.layout.floating_widget_timer_layout
         val view = inflater.inflate(layout, null)
 
         //Add the view to the window.
@@ -198,15 +329,8 @@ class FloatingWidgetService : Service(), View.OnClickListener{
         //Add the view to the window
         mWindowManager!!.addView(view, params)
 
-        //find id of collapsed view layout
-//        val collapsedView = view.findViewById<RelativeLayout>(R.id.collapse_view)
-
-        //find id of the expanded view layout
-//        val expandedView = view.findViewById<LinearLayout>(R.id.expanded_container)
 
         mFloatingWidgetViewMap!!.put(id, view)
-//        collapsedViewMap!!.put(id, collapsedView)
-//        expandedViewMap!!.put(id, expandedView)
         return view
     }
 
@@ -221,6 +345,7 @@ class FloatingWidgetService : Service(), View.OnClickListener{
     }
 
     /*  Implement Touch Listener to Floating Widget Root View  */
+    @SuppressLint("ClickableViewAccessibility")
     private fun implementTouchListenerToFloatingWidgetView(id: Int) {
         //Drag and move floating view using user's touch action.
         mFloatingWidgetViewMap!!.get(id)!!.findViewById<RelativeLayout>(R.id.root_container).setOnTouchListener(object : View.OnTouchListener {
@@ -241,7 +366,7 @@ class FloatingWidgetService : Service(), View.OnClickListener{
                 isLongClick = true
 
                 //Set remove widget view visibility to VISIBLE
-                removeFloatingWidgetView!!.visibility = View.VISIBLE
+//                removeFloatingWidgetView!!.visibility = View.VISIBLE
 
                 onFloatingWidgetLongClick(id)
             }
@@ -265,8 +390,8 @@ class FloatingWidgetService : Service(), View.OnClickListener{
 
                         handler_longClick.postDelayed(runnable_longClick, 600)
 
-                        remove_img_width = remove_image_view!!.layoutParams.width
-                        remove_img_height = remove_image_view!!.layoutParams.height
+//                        remove_img_width = remove_image_view!!.layoutParams.width
+//                        remove_img_height = remove_image_view!!.layoutParams.height
 
                         x_init_cord = x_cord
                         y_init_cord = y_cord
@@ -280,9 +405,9 @@ class FloatingWidgetService : Service(), View.OnClickListener{
                     MotionEvent.ACTION_UP -> {
                         Log.d(FloatingWidgetService::class.java.name, "Touch Action Up")
                         isLongClick = false
-                        removeFloatingWidgetView!!.visibility = View.GONE
-                        remove_image_view!!.layoutParams.height = remove_img_height
-                        remove_image_view!!.layoutParams.width = remove_img_width
+//                        removeFloatingWidgetView!!.visibility = View.GONE
+//                        remove_image_view!!.layoutParams.height = remove_img_height
+//                        remove_image_view!!.layoutParams.width = remove_img_width
                         handler_longClick.removeCallbacks(runnable_longClick)
 
                         //If user drag and drop the floating widget view into remove view then stop the service
@@ -334,43 +459,43 @@ class FloatingWidgetService : Service(), View.OnClickListener{
                         y_cord_Destination = y_init_margin + y_diff_move
 
                         //If user long click the floating view, update remove view
-                        if (isLongClick) {
-                            val x_bound_left = szWindow.x / 2 - (remove_img_width * 1.5).toInt()
-                            val x_bound_right = szWindow.x / 2 + (remove_img_width * 1.5).toInt()
-                            val y_bound_top = szWindow.y - (remove_img_height * 1.5).toInt()
+                        /* if (isLongClick) {
+                             val x_bound_left = szWindow.x / 2 - (remove_img_width * 1.5).toInt()
+                             val x_bound_right = szWindow.x / 2 + (remove_img_width * 1.5).toInt()
+                             val y_bound_top = szWindow.y - (remove_img_height * 1.5).toInt()
 
-                            //If Floating view comes under Remove View update Window Manager
-                            if (x_cord >= x_bound_left && x_cord <= x_bound_right && y_cord >= y_bound_top) {
-                                inBounded = true
+                             //If Floating view comes under Remove View update Window Manager
+                             if (x_cord >= x_bound_left && x_cord <= x_bound_right && y_cord >= y_bound_top) {
+                                 inBounded = true
 
-                                val x_cord_remove = ((szWindow.x - remove_img_height * 1.5) / 2).toInt()
-                                val y_cord_remove = (szWindow.y - (remove_img_width * 1.5 + statusBarHeight)).toInt()
+                                 val x_cord_remove = ((szWindow.x - remove_img_height * 1.5) / 2).toInt()
+                                 val y_cord_remove = (szWindow.y - (remove_img_width * 1.5 + statusBarHeight)).toInt()
 
-                                if (remove_image_view!!.layoutParams.height == remove_img_height) {
-                                    remove_image_view!!.layoutParams.height = (remove_img_height * 1.5).toInt()
-                                    remove_image_view!!.layoutParams.width = (remove_img_width * 1.5).toInt()
+                                 if (remove_image_view!!.layoutParams.height == remove_img_height) {
+                                     remove_image_view!!.layoutParams.height = (remove_img_height * 1.5).toInt()
+                                     remove_image_view!!.layoutParams.width = (remove_img_width * 1.5).toInt()
 
-                                    val param_remove = removeFloatingWidgetView!!.layoutParams as WindowManager.LayoutParams
-                                    param_remove.x = x_cord_remove
-                                    param_remove.y = y_cord_remove
+                                     val param_remove = removeFloatingWidgetView!!.layoutParams as WindowManager.LayoutParams
+                                     param_remove.x = x_cord_remove
+                                     param_remove.y = y_cord_remove
 
-                                    mWindowManager!!.updateViewLayout(removeFloatingWidgetView, param_remove)
-                                }
+                                     mWindowManager!!.updateViewLayout(removeFloatingWidgetView, param_remove)
+                                 }
 
-                                layoutParams.x = x_cord_remove + Math.abs(removeFloatingWidgetView!!.width - mFloatingWidgetViewMap!!.get(id)!!.width) / 2
-                                layoutParams.y = y_cord_remove + Math.abs(removeFloatingWidgetView!!.height - mFloatingWidgetViewMap!!.get(id)!!.height) / 2
+                                 layoutParams.x = x_cord_remove + Math.abs(removeFloatingWidgetView!!.width - mFloatingWidgetViewMap!!.get(id)!!.width) / 2
+                                 layoutParams.y = y_cord_remove + Math.abs(removeFloatingWidgetView!!.height - mFloatingWidgetViewMap!!.get(id)!!.height) / 2
 
-                                //Update the layout with new X & Y coordinate
-                                mWindowManager!!.updateViewLayout(mFloatingWidgetViewMap!!.get(id)!!, layoutParams)
-                            } else {
-                                //If Floating window gets out of the Remove view update Remove view again
-                                inBounded = false
-                                remove_image_view!!.layoutParams.height = remove_img_height
-                                remove_image_view!!.layoutParams.width = remove_img_width
-                                //onFloatingWidgetClick(id)
-                            }
+                                 //Update the layout with new X & Y coordinate
+                                 mWindowManager!!.updateViewLayout(mFloatingWidgetViewMap!!.get(id)!!, layoutParams)
+                             } else {
+                                 //If Floating window gets out of the Remove view update Remove view again
+                                 inBounded = false
+                                 remove_image_view!!.layoutParams.height = remove_img_height
+                                 remove_image_view!!.layoutParams.width = remove_img_width
+                                 //onFloatingWidgetClick(id)
+                             }
 
-                        }
+                         }*/
 
 
                         layoutParams.x = x_cord_Destination
@@ -446,62 +571,62 @@ class FloatingWidgetService : Service(), View.OnClickListener{
 
 
     /*  Method to move the Floating widget view to Left  */
-//    private fun moveToLeft(current_x_cord: Int) {
-//        val x = szWindow.x - current_x_cord
-//
-//        object : CountDownTimer(500, 5) {
-//            //get params of Floating Widget view
-//            internal var mParams = mFloatingWidgetView!!.layoutParams as WindowManager.LayoutParams
-//
-//            override fun onTick(t: Long) {
-//                val step = (500 - t) / 5
-//
-//                mParams.x = 0 - (current_x_cord.toLong() * current_x_cord.toLong() * step).toInt()
-//
-//                //If you want bounce effect uncomment below line and comment above line
-//                // mParams.x = 0 - (int) (double) bounceValue(step, x);
-//
-//
-//                //Update window manager for Floating Widget
-//                mWindowManager!!.updateViewLayout(mFloatingWidgetView, mParams)
-//            }
-//
-//            override fun onFinish() {
-//                mParams.x = 0
-//
-//                //Update window manager for Floating Widget
-//                mWindowManager!!.updateViewLayout(mFloatingWidgetView, mParams)
-//            }
-//        }.start()
-//    }
+    /*private fun moveToLeft(current_x_cord: Int) {
+        val x = szWindow.x - current_x_cord
+
+        object : CountDownTimer(500, 5) {
+            //get params of Floating Widget view
+            internal var mParams = mFloatingWidgetView!!.layoutParams as WindowManager.LayoutParams
+
+            override fun onTick(t: Long) {
+                val step = (500 - t) / 5
+
+                mParams.x = 0 - (current_x_cord.toLong() * current_x_cord.toLong() * step).toInt()
+
+                //If you want bounce effect uncomment below line and comment above line
+                // mParams.x = 0 - (int) (double) bounceValue(step, x);
+
+
+                //Update window manager for Floating Widget
+                mWindowManager!!.updateViewLayout(mFloatingWidgetView, mParams)
+            }
+
+            override fun onFinish() {
+                mParams.x = 0
+
+                //Update window manager for Floating Widget
+                mWindowManager!!.updateViewLayout(mFloatingWidgetView, mParams)
+            }
+        }.start()
+    }*/
 
     /*  Method to move the Floating widget view to Right  */
-//    private fun moveToRight(current_x_cord: Int) {
-//
-//        object : CountDownTimer(500, 5) {
-//            //get params of Floating Widget view
-//            internal var mParams = mFloatingWidgetView!!.layoutParams as WindowManager.LayoutParams
-//
-//            override fun onTick(t: Long) {
-//                val step = (500 - t) / 5
-//
-//                mParams.x = (szWindow.x + current_x_cord.toLong() * current_x_cord.toLong() * step - mFloatingWidgetView!!.width).toInt()
-//
-//                //If you want bounce effect uncomment below line and comment above line
-//                //  mParams.x = szWindow.x + (int) (double) bounceValue(step, x_cord_now) - mFloatingWidgetView.getWidth();
-//
-//                //Update window manager for Floating Widget
-//                mWindowManager!!.updateViewLayout(mFloatingWidgetView, mParams)
-//            }
-//
-//            override fun onFinish() {
-//                mParams.x = szWindow.x - mFloatingWidgetView!!.width
-//
-//                //Update window manager for Floating Widget
-//                mWindowManager!!.updateViewLayout(mFloatingWidgetView, mParams)
-//            }
-//        }.start()
-//    }
+    /* private fun moveToRight(current_x_cord: Int) {
+
+         object : CountDownTimer(500, 5) {
+             //get params of Floating Widget view
+             internal var mParams = mFloatingWidgetView!!.layoutParams as WindowManager.LayoutParams
+
+             override fun onTick(t: Long) {
+                 val step = (500 - t) / 5
+
+                 mParams.x = (szWindow.x + current_x_cord.toLong() * current_x_cord.toLong() * step - mFloatingWidgetView!!.width).toInt()
+
+                 //If you want bounce effect uncomment below line and comment above line
+                 //  mParams.x = szWindow.x + (int) (double) bounceValue(step, x_cord_now) - mFloatingWidgetView.getWidth();
+
+                 //Update window manager for Floating Widget
+                 mWindowManager!!.updateViewLayout(mFloatingWidgetView, mParams)
+             }
+
+             override fun onFinish() {
+                 mParams.x = szWindow.x - mFloatingWidgetView!!.width
+
+                 //Update window manager for Floating Widget
+                 mWindowManager!!.updateViewLayout(mFloatingWidgetView, mParams)
+             }
+         }.start()
+     }*/
 
     /*  Get Bounce value if you want to make bounce effect to your Floating Widget */
     private fun bounceValue(step: Long, scale: Long): Double {
@@ -552,6 +677,17 @@ class FloatingWidgetService : Service(), View.OnClickListener{
         }
     }
 
+
+    override fun onListen(p0: Any?, p1: EventChannel.EventSink?) {
+        Log.d("FloatingWidgetService", "EventBus onListen Called")
+        eventSink = p1
+    }
+
+    override fun onCancel(p0: Any?) {
+        eventSink = null
+        Log.d("FloatingWidgetService", "EventBus onCancel Called")
+    }
+
     override fun onDestroy() {
         super.onDestroy()
 
@@ -564,6 +700,8 @@ class FloatingWidgetService : Service(), View.OnClickListener{
         if (removeFloatingWidgetView != null)
             mWindowManager!!.removeView(removeFloatingWidgetView)
 
+        EventBus.getDefault().unregister(this)
+        Log.d("FloatingWidgetService", "Service destroyed")
     }
 
 

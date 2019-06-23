@@ -13,9 +13,11 @@ import com.timerly.timerlyplugin.models.RemoveNotificationRequest
 import com.timerly.timerlyplugin.models.TimerlyTimerEvent
 import io.flutter.plugin.common.EventChannel
 import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 
 
-class TimerlyForegroundService : Service(){
+class TimerlyForegroundService : Service(), EventChannel.StreamHandler {
 
     private var eventSink: EventChannel.EventSink? = null
     private val TAG_FOREGROUND_SERVICE = "TimerlyForegroundTag"
@@ -31,8 +33,8 @@ class TimerlyForegroundService : Service(){
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-//        if (!EventBus.getDefault().isRegistered(this))
-//            EventBus.getDefault().register(this)
+        if (!EventBus.getDefault().isRegistered(this))
+            EventBus.getDefault().register(this)
         if (intent != null) {
             val action = intent.action
             when (action) {
@@ -58,6 +60,11 @@ class TimerlyForegroundService : Service(){
             }
         }
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onNotificationEvent(timerlyTimerEvent: TimerlyTimerEvent) {
+        Log.d("TimerlyNotification", "received EventBus Notification in Timerly Foreground Service")
     }
 
     /* Used to add new Notification. */
@@ -165,12 +172,17 @@ class TimerlyForegroundService : Service(){
         stopSelf()
     }
 
-     fun onListen(p0: Any?, p1: EventChannel.EventSink?) {
+    override fun onListen(p0: Any?, p1: EventChannel.EventSink?) {
         eventSink = p1!!
     }
 
-     fun onCancel(p0: Any?) {
+    override fun onCancel(p0: Any?) {
         eventSink = null
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        EventBus.getDefault().unregister(this)
     }
 
 
