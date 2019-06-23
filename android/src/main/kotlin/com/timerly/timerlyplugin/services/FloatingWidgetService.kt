@@ -71,11 +71,6 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
             get() = this@FloatingWidgetService
     }
 
-    /*  Detect if the floating view is collapsed or expanded */
-    private fun isViewCollapsed(id: Int): Boolean =
-            mFloatingWidgetViewMap!!.get(id) == null || mFloatingWidgetViewMap!!.get(id)!!.findViewById<RelativeLayout>(R.id.collapse_view).getVisibility() == View.VISIBLE
-
-
     /*  return status bar height on basis of device display metrics  */
     private val statusBarHeight: Int
         get() = Math.ceil((25 * baseContext.resources.displayMetrics.density).toDouble()).toInt()
@@ -209,9 +204,29 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
 
     private fun addStopwatch(stopwatch: Stopwatch) {
         if (!mFloatingWidgetViewMap!!.containsKey(stopwatch.id)) {
-            addFloatingWidgetView(stopwatch.id, R.layout.floating_widget_stopwatch_layout)
+            val stopwatchView = addFloatingWidgetView(stopwatch.id, R.layout.floating_widget_stopwatch_layout)
             implementTouchListenerToFloatingWidgetView(stopwatch.id)
             updateStopwatchValue(stopwatch)
+            updateStopwatchName(stopwatch.id, stopwatch.name)
+
+            val button_1 = stopwatchView!!.findViewById<TextView>(R.id.button_1)
+            val button_2 = stopwatchView!!.findViewById<TextView>(R.id.button_2)
+            val close_floating_view = stopwatchView!!.findViewById<ImageButton>(R.id.close_floating_view)
+            button_1.setOnClickListener {
+                EventBus.getDefault().post(TimerlyTimerEvent(stopwatch.id, StopwatchManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_1_CLICKED, Utils.gson.toJson(stopwatch)))
+            }
+            button_2.setOnClickListener {
+                EventBus.getDefault().post(TimerlyTimerEvent(stopwatch.id, StopwatchManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_2_CLICKED, Utils.gson.toJson(stopwatch)))
+            }
+            close_floating_view.setOnClickListener {
+                EventBus.getDefault().post(TimerlyTimerEvent(stopwatch.id, StopwatchManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_CLOSE_CLICKED, Utils.gson.toJson(stopwatch)))
+            }
+            stopwatchView.findViewById<TextView>(R.id.heading).setOnClickListener {
+                EventBus.getDefault().post(TimerlyTimerEvent(stopwatch.id, StopwatchManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_OPEN_ACTIVITY, Utils.gson.toJson(stopwatch)))
+            }
+            stopwatchView.findViewById<TextView>(R.id.timer_value).setOnClickListener {
+                EventBus.getDefault().post(TimerlyTimerEvent(stopwatch.id, StopwatchManager.widgetType, COMMAND_FROM_SERVICE_BUTTON_OPEN_ACTIVITY, Utils.gson.toJson(stopwatch)))
+            }
         }
     }
 
@@ -224,7 +239,11 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
     }
 
     private fun startStopwatch(id: Int) {
-
+        if (mFloatingWidgetViewMap!!.containsKey(id)) {
+            val view = mFloatingWidgetViewMap!!.get(id)
+            view!!.findViewById<TextView>(R.id.button_1).text = "Lap"
+            view!!.findViewById<TextView>(R.id.button_2).text = "Stop"
+        }
     }
 
     private fun removeTimer(id: Int) {
@@ -252,7 +271,12 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
     }
 
     private fun resetStopwatch(stopwatch: Stopwatch) {
-
+        if (mFloatingWidgetViewMap!!.containsKey(stopwatch.id)) {
+            val view = mFloatingWidgetViewMap!!.get(stopwatch.id)
+            view!!.findViewById<TextView>(R.id.timer_value).text = Utils.formatSeconds(0)
+            view!!.findViewById<TextView>(R.id.button_1).text = "Start"
+            view!!.findViewById<TextView>(R.id.button_2).text = "Reset"
+        }
     }
 
     private fun stopTimer(id: Int) {
@@ -263,21 +287,33 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
     }
 
     private fun stopStopwatch(id: Int) {
-
+        if (mFloatingWidgetViewMap!!.containsKey(id)) {
+            val view = mFloatingWidgetViewMap!!.get(id)
+            view!!.findViewById<TextView>(R.id.button_1).text = "Start"
+            view!!.findViewById<TextView>(R.id.button_2).text = "Reset"
+        }
     }
 
     private fun updateTimerValue(timer: Timer) {
         if (mFloatingWidgetViewMap!!.containsKey(timer.id)) {
             val view = mFloatingWidgetViewMap!!.get(timer.id)
             view!!.findViewById<TextView>(R.id.timer_value).text = Utils.formatSeconds(timer.currentTime)
-            //view!!.findViewById<TextView>(R.id.button_1).text = if (timer.isPlaying) "Stop" else "Start"
         }
     }
 
     private fun updateStopwatchValue(stopwatch: Stopwatch) {
-//        val view = collapsedViewMap!!.get(stopwatch.id)
-//        view!!.findViewById<TextView>(R.id.heading).setText(stopwatch.name)
-//        view!!.findViewById<TextView>(R.id.timer_value).setText(formatSeconds(stopwatch.currentTime))
+        if (mFloatingWidgetViewMap!!.containsKey(stopwatch.id)) {
+            val view = mFloatingWidgetViewMap!!.get(stopwatch.id)
+            view!!.findViewById<TextView>(R.id.timer_value).text = Utils.formatSeconds(stopwatch.currentTime)
+            if(stopwatch.isPlaying) {
+                view!!.findViewById<TextView>(R.id.button_1).text = "Lap"
+                view!!.findViewById<TextView>(R.id.button_2).text = "Stop"
+            }
+            else{
+                view!!.findViewById<TextView>(R.id.button_1).text = "Start"
+                view!!.findViewById<TextView>(R.id.button_2).text = "Reset"
+            }
+        }
     }
 
     private fun updateTimerName(id: Int, name: String?) {
@@ -287,7 +323,12 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
         }
     }
 
-    private fun updateStopwatchName(id: Int, name: String?) {}
+    private fun updateStopwatchName(id: Int, name: String?) {
+        if (mFloatingWidgetViewMap!!.containsKey(id) && name != null) {
+            val view = mFloatingWidgetViewMap!!.get(id)
+            view!!.findViewById<TextView>(R.id.heading).text = name
+        }
+    }
 
 
     /*  Add Remove View to Window Manager  */
@@ -530,20 +571,6 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
             R.id.close_floating_view ->
                 //close the service and remove the from from the window
                 stopSelf()
-
-//            R.id.close_expanded_view -> {
-////                collapsedView!!.visibility = View.VISIBLE
-////                expandedView!!.visibility = View.GONE
-//            }
-//            R.id.open_activity_button -> {
-//                //open the activity and stop service
-//                /*val intent = Intent(this@FloatingWidgetService, MainActivity::class.java)
-//                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-//                startActivity(intent)*/
-//
-//                //close the service and remove view from the view hierarchy
-//                stopSelf()
-//            }
         }
     }
 
@@ -674,14 +701,9 @@ class FloatingWidgetService : Service(), View.OnClickListener, EventChannel.Stre
 
     /*  on Floating widget click show expanded view  */
     private fun onFloatingWidgetClick(id: Int) {
-        if (isViewCollapsed(id)) {
-            //When user clicks on the image view of the collapsed layout,
-            //visibility of the collapsed layout will be changed to "View.GONE"
-            //and expanded view will become visible.
-//            collapsedViewMap!!.get(id)!!.visibility = View.GONE
-//            expandedViewMap!!.get(id)!!.visibility = View.VISIBLE
-
-        }
+        //When user clicks on the image view of the collapsed layout,
+        //visibility of the collapsed layout will be changed to "View.GONE"
+        //and expanded view will become visible.
     }
 
 

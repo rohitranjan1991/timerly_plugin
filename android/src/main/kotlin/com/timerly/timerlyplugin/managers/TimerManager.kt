@@ -11,7 +11,6 @@ import com.timerly.timerlyplugin.models.*
 import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_1_CLICKED
 import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_2_CLICKED
 import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_BUTTON_CLOSE_CLICKED
-import com.timerly.timerlyplugin.models.Constants.COMMAND_FROM_SERVICE_STOP_CLICKED
 import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_ADD
 import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_REMOVE
 import com.timerly.timerlyplugin.models.Constants.COMMAND_TO_SERVICE_RESET
@@ -53,7 +52,7 @@ object TimerManager {
         if (!timers.containsKey(timer.id)) {
             timers.put(timer.id, timer)
 
-            // TODO - check teh use of this if condition
+            // TODO - check the use of this if condition
             if (timers.size == 1) {
                 eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, TimerManager.widgetType, COMMAND_TO_SERVICE_ADD, Utils.gson.toJson(timer))))
             }
@@ -93,7 +92,7 @@ object TimerManager {
                 return
             }
             timer.isPlaying = true
-            val request = CreateForegroundServiceRequest(timer!!.id, 1, timer!!.name, "Timer Started", timer!!.name, "Timer Started", false, NotificationCompat.PRIORITY_MAX, true, "Timer Notifications", "245699", listOf(NotificationActionButton(timer!!.id, "Stop", COMMAND_FROM_SERVICE_BUTTON_1_CLICKED), NotificationActionButton(timer!!.id, "Reset", COMMAND_FROM_SERVICE_STOP_CLICKED)), 4)
+            val request = CreateForegroundServiceRequest(timer!!.id, 1, timer!!.name, "Timer Started", timer!!.name, "Timer Started", false, NotificationCompat.PRIORITY_MAX, true, "Timer Notifications", "245699", listOf(NotificationActionButton(timer!!.id, "Stop", COMMAND_FROM_SERVICE_BUTTON_1_CLICKED), NotificationActionButton(timer!!.id, "Reset", COMMAND_FROM_SERVICE_BUTTON_2_CLICKED)), 4)
 
             val intent = Intent(activity, TimerlyForegroundService::class.java)
             intent.putExtra("data", Utils.gson.toJson(request))
@@ -119,7 +118,6 @@ object TimerManager {
                         eventSink?.success(Utils.gson.toJson(TimerlyTimerEvent(timer.id, widgetType, "UPDATE_TIMER_VALUE", Utils.gson.toJson(timer))))
                         EventBus.getDefault().post(TimerlyTimerEvent(timer.id, widgetType, COMMAND_TO_SERVICE_UPDATE_VALUE, Utils.gson.toJson(timer)))
                         timer.isPlaying = true
-                        //FloatingServiceManager.updateTimer(timer)
                     } else {
                         stopTimer(id, activity)
                         Log.d("TimerManager", Utils.gson.toJson(timer))
@@ -225,19 +223,13 @@ object TimerManager {
             val timer = timers.get(timerlyTimerEvent.id)
             when (timerlyTimerEvent.command) {
                 COMMAND_FROM_SERVICE_BUTTON_1_CLICKED -> {
-                    if (timers.containsKey(timer!!.id)) {
-                        val tim = timers.get(timer!!.id)
-                        if (tim!!.isPlaying)
-                            stopTimer(tim.id, activity)
-                        else
-                            startTimer(tim.id, activity)
-                    }
+                    if (timer!!.isPlaying)
+                        stopTimer(timer.id, activity)
+                    else
+                        startTimer(timer.id, activity)
                 }
                 COMMAND_FROM_SERVICE_BUTTON_2_CLICKED -> {
                     resetTimer(timer!!.id, activity)
-                }
-                COMMAND_FROM_SERVICE_STOP_CLICKED -> {
-                    stopTimer(timerlyTimerEvent.id, activity)
                 }
                 COMMAND_FROM_SERVICE_BUTTON_CLOSE_CLICKED -> {
                     toggleFloatingWidget(timer!!.id)

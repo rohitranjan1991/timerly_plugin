@@ -92,7 +92,9 @@ class TimerlyPlugin(val activity: FlutterActivity) : MethodCallHandler, EventCha
             val gr = Gson().fromJson<GenericRequest2>(data, GenericRequest2::class.java)
             StopwatchManager.updateStopwatchName(gr.id, gr.arg1 as String)
         } else if (call.method.equals("toggleStopwatchFloatingWidget")) {
-
+            val data = call.argument<String>("data")
+            val gr = Gson().fromJson<GenericRequest1>(data, GenericRequest1::class.java)
+            StopwatchManager.toggleFloatingWidget(gr.id)
         }
 
         // Timer Commands
